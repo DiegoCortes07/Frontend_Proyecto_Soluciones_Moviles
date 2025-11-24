@@ -16,7 +16,9 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "UIBackgroundModes": ["audio"]
+        "UIBackgroundModes": [
+          "audio"
+        ]
       }
     },
     "android": {
@@ -32,6 +34,9 @@
     },
     "router": {
       "origin": false
-    }
+    },
+    "plugins": [
+      "expo-audio"
+    ]
   }
 }

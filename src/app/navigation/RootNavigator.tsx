@@ -1,12 +1,13 @@
 import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import NowPlayingScreen from "../../features/music/screens/NowPlayingScreen";
-import LoginScreen from "../../features/account/screens/loginScreen";
-import RegisterScreen from "../../features/account/screens/registerScreen";
-import RegisterEmailScreen from "../../features/account/screens/registerEmailScreen";
+import LoginScreen from "../../features/account/screens/Auth/loginScreen";
+import RegisterScreen from "../../features/account/screens/Auth/registerScreen";
+import RegisterEmailScreen from "../../features/account/screens/Auth/registerEmailScreen";
+import HomeScreen from "../../features/home/screens/home";
+import Player from "../../features/PlayerSong/player";
 
 
-export type RootStackParamList = { Login: undefined, Register: undefined, RegisterEmail: undefined };
+export type RootStackParamList = { Login: undefined, Register: undefined, RegisterEmail: undefined, Home: undefined, Player: undefined };
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function RootNavigator() {
@@ -18,6 +19,8 @@ export default function RootNavigator() {
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
       <Stack.Screen name="RegisterEmail" component={RegisterEmailScreen} />
+      <Stack.Screen name="Home" component={HomeScreen} />
+      <Stack.Screen name="Player" component={Player} />
     </Stack.Navigator>
   );
 }
