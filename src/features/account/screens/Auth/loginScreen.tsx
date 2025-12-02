@@ -24,7 +24,13 @@ export default function LoginScreen() {
   const [visiblePass, setVisiblePass] = useState(false);
 
   const [errorData, setErrorData] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("Credenciales inválidas")
+  const [seconds, setSeconds] = useState(0);
+  const [blockedLogin, setBlockedLogin] = useState(false);
+
   const canSubmit = useRef(false);
+  const loginAttempts = useRef(0);
+  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Animación botón
   const animation = useRef(new Animated.Value(0)).current;
@@ -50,6 +56,7 @@ export default function LoginScreen() {
   };
 
   useEffect(() => {
+    if(blockedLogin) return;
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     const active =
@@ -72,9 +79,12 @@ export default function LoginScreen() {
   });
 
   const handleLogin = () => {
+    if(blockedLogin) return;
+
     console.log("Email:", email);
     console.log("Password:", password);
-
+ 
+    
     login(email, password)
       .then(() => {
         setErrorData(false);
@@ -83,12 +93,39 @@ export default function LoginScreen() {
         navigation.navigate("Home");
         console.log("Login exitoso");
       })
-      .catch(() => {
+      .catch((error) => {
+        if(error.message == "Cuenta inhabilitada"){
+          setErrorMessage("Esta cuenta aun no esta activada, revise su email.");
+        }
+        else{
+          setErrorMessage("Credenciales inválidas");
+        }
+        loginAttempts.current++;
         setErrorData(true);
         shakeAnimation();
       });
     
+    if((loginAttempts.current + 1)%5 == 0){
+      setBlockedLogin(true);
+      animateButton(false);
+      setSeconds(25);
+
+      timer.current = setInterval(() => {
+        setSeconds(prev => prev - 1);
+        setBlockedLogin(true);
+      }, 1000);
+    }
+
   };
+
+  useEffect(()=>{
+    
+    if(seconds<= 0 && !!timer.current){
+      clearInterval(timer.current); 
+      timer.current = null;
+      setBlockedLogin(false);
+    }
+  }, [seconds]);
 
   return (
     <View style={styles.backgroundContainer}>
@@ -159,7 +196,17 @@ export default function LoginScreen() {
         </Animated.View>
 
         {errorData && 
-          <Text style={styles.errorText}>Credenciales inválidas</Text>
+          <Text style={styles.errorText}>{errorMessage}</Text>
+        }
+
+        {blockedLogin &&
+          <>
+          <Text style={styles.subtitle}>Demasiados intentos fallidos.</Text>
+          <Text style={styles.subtitle}>Espere la siguiente cantidad de tiempo.</Text>
+          <Text style={styles.title}>{seconds}</Text>
+          <Text style={styles.title}>Segundos.</Text>
+          </>
+
         }
 
         <Text style={styles.divider}>────────  o  ────────</Text>

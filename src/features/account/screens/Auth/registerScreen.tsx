@@ -1,5 +1,4 @@
 import { useNavigation } from "@react-navigation/native";
-import React from "react";
 import {
   View,
   Text,
@@ -10,8 +9,13 @@ import {
   Pressable,
 } from "react-native";
 
+import { RootStackParamList } from "../../../../app/navigation/RootNavigator";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+
+type NavProp = NativeStackNavigationProp<RootStackParamList, "Login", "RegisterEmail">;
+
 export default function RegisterScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavProp>();
 
   const SocialButton = ({ text, icon, onPress }: any) => (
     <Pressable

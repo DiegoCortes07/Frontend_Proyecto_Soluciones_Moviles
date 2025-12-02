@@ -7,7 +7,10 @@ export const login = async (email, password) => {
         return response.data;
 
     } catch (error) {
-        if (error.response) {
+        if (error.response.data.blocked) {
+            throw new Error("Cuenta inhabilitada");
+        }
+        else if (error.response){
             throw new Error("Error en el inicio de sesión");
         }
         else {
@@ -26,5 +29,15 @@ export const register = async (username, email, password) => {
         return response.data;
     } catch (error) {
         throw error;
+    }
+};
+
+export const validateEmail = async (token) =>{
+    try {
+        const response = await api.post('/users/verifmail', {token});
+        return response.data;
+
+    } catch (error) {
+        throw(error);
     }
 };

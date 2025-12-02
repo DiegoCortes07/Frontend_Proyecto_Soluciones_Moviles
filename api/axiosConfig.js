@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // api url desde el .env
-const API_URL ="http://localhost:8080/api";
+const API_URL ="http://192.168.1.102:8080/api";
 
 const axiosInstance = axios.create({
   baseURL: API_URL,

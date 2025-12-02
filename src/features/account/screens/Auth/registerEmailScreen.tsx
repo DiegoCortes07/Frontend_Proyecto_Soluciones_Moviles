@@ -10,8 +10,14 @@ import {
   Image,
   ScrollView,
 } from "react-native";
+import { RootStackParamList } from "../../../../app/navigation/RootNavigator";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+
+type NavProp = NativeStackNavigationProp<RootStackParamList, "Login">;
 
 export default function RegisterEmailScreen() {
+  const navigation = useNavigation<NavProp>();
+  
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordCopy, setPasswordCopy] = useState("");
@@ -24,7 +30,6 @@ export default function RegisterEmailScreen() {
 
   const completeDat = useRef(true);
 
-  const navigation = useNavigation();
 
   const handleRegister = () => {
     console.log("Usuario:", username); // Debe ser 'Diafx'
