@@ -1,36 +1,20 @@
 import React, { useEffect, useState } from "react";
-import { useNavigation } from "@react-navigation/native";
-import {
-  View,
-  Text,
-  FlatList,
-  StyleSheet,
-  Image,
-  TouchableOpacity,
-  ActivityIndicator,
-  TextInput,
-  ScrollView,
-} from "react-native";
-import Slider from "@react-native-community/slider";
+import { useRoute, RouteProp } from "@react-navigation/native";
+import { RootStackParamList } from "../../../app/navigation/RootNavigator";
+import { useNavigation} from "@react-navigation/native";
+import { View, StyleSheet, ScrollView, Alert, ActivityIndicator } from "react-native";
 import { fetchSongs } from "../../../../api/songs";
 import { fetchAlbums } from "../../../../api/album";
-import Icon from "react-native-vector-icons/FontAwesome";
-import { AudioPlayer, useAudioPlayer } from "expo-audio"; // Usando expo-audio
-
-// Tipos de Song y Album (si es necesario para TypeScript)
-interface Song {
-  id: number;
-  title: string;
-  artistName: string;
-  imageUrl: string;
-  cloudinarySecureUrl: string;
-}
-
-interface Album {
-  id: number;
-  title: string;
-  image: string;
-}
+import { useAudioPlayer } from "expo-audio";
+import AppLayout from "../../../components/layout/AppLayout";
+import NowPlayingBar from "../../../components/NowPlayingBar";
+import HomeLeftColumn from "../components/HomeLeftColumn";
+import { useAuth } from "../../../contexts/AuthContext";
+import Song from "../../../interfaces/Song";
+import Album from "../../../interfaces/Album";
+import User from "../../../interfaces/User";
+import { me } from "../../../../api/auth";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 export default function Home() {
   const [songs, setSongs] = useState<Song[]>([]);
@@ -41,11 +25,19 @@ export default function Home() {
   const [searchText, setSearchText] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
+  const [barHeight, setBarHeight] = useState<number>(84);
+  const [favorites, setFavorites] = useState<Set<number>>(new Set());
+  
 
   const player = useAudioPlayer();
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList, "Home">>();
+  const { user, token } = useAuth();
 
-  // Función para cargar canciones
+  useEffect(() => {
+    loadSongs();
+    loadAlbums();
+  }, []);
+
   const loadSongs = async () => {
     try {
       const response = await fetchSongs();
@@ -57,7 +49,6 @@ export default function Home() {
     }
   };
 
-  // Función para cargar álbumes
   const loadAlbums = async () => {
     try {
       const response = await fetchAlbums();
@@ -69,21 +60,20 @@ export default function Home() {
     }
   };
 
-  useEffect(() => {
-    loadSongs();
-    loadAlbums();
-  }, []);
+  // user provided by AuthContext
 
-  // Manejo de selección de canción
   const handleSongSelect = async (song: Song) => {
     setSelectedSong(song);
-    player.seekTo(0);
-    player.replace(song.cloudinarySecureUrl);
-    player.play();
-    setIsPlaying(true);
+    try {
+      player.seekTo(0);
+      await player.replace(song.cloudinarySecureUrl);
+      await player.play();
+      setIsPlaying(true);
+    } catch (e) {
+      console.error("Playback error:", e);
+    }
   };
 
-  // Alternar entre Play/Pause
   const togglePlayPause = async () => {
     try {
       if (isPlaying) {
@@ -98,6 +88,51 @@ export default function Home() {
     }
   };
 
+  useEffect(() => {
+    let interval: NodeJS.Timeout | undefined;
+    if (isPlaying) {
+      interval = setInterval(() => {
+        setCurrentTime(player.currentTime || 0);
+      }, 1000);
+    }
+    return () => interval && clearInterval(interval);
+  }, [isPlaying, player.currentTime]);
+
+  const prevSong = async () => {
+    if (!selectedSong || songs.length === 0) return;
+    const idx = songs.findIndex((s) => s.id === selectedSong.id);
+    const newIdx = idx > 0 ? idx - 1 : songs.length - 1;
+    await handleSongSelect(songs[newIdx]);
+  };
+
+  const nextSong = async () => {
+    if (!selectedSong || songs.length === 0) return;
+    const idx = songs.findIndex((s) => s.id === selectedSong.id);
+    const newIdx = idx < songs.length - 1 ? idx + 1 : 0;
+    await handleSongSelect(songs[newIdx]);
+  };
+
+  const handleSeek = async (time: number) => {
+    setCurrentTime(time);
+    await player.seekTo(time);
+  };
+
+  const toggleFavorite = (song: Song) => {
+    setFavorites((prev) => {
+      const next = new Set(prev);
+      if (next.has(song.id)) next.delete(song.id);
+      else next.add(song.id);
+      return next;
+    });
+  };
+
+  const handleAddToPlaylist = (song: Song) => {
+    Alert.alert(
+      "Añadir a playlist",
+      `Agregar "${song.title}" a una playlist (placeholder).`
+    );
+  };
+
   const filteredSongs = songs.filter(
     (song) =>
       song.title.toLowerCase().includes(searchText.toLowerCase()) ||
@@ -108,177 +143,49 @@ export default function Home() {
     album.title.toLowerCase().includes(searchText.toLowerCase())
   );
 
-  const formatTime = (segundos: number) => {
-    if (isNaN(segundos) || segundos < 0) {
-      return "0:00";
-    }
-
-    const minutes = Math.floor(segundos / 60);
-    const seconds = Math.floor(segundos % 60);
-    return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
-  };
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-
-    if (isPlaying) {
-      interval = setInterval(() => {
-        setCurrentTime(player.currentTime);
-      }, 1000);
-    }
-
-    return () => clearInterval(interval);
-  }, [isPlaying, player.currentTime]);
-
-  const handleSliderChange = async (value: number) => {
-    setCurrentTime(value * player.duration);
-    await player.seekTo(value * player.duration);
-  };
-
-  const logout = async () => {
-    navigation.navigate("Login");
-  };
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <TouchableOpacity onPress={logout} style={styles.logoutButton}>
-          <Text style={styles.logoutButtonText}>Cerrar sesión</Text>
-        </TouchableOpacity>
-        {/* Barra de perfil */}
-        <View style={styles.profileContainer}>
-          <Image
-            source={{ uri: "https://www.example.com/profile.jpg" }}
-            style={styles.profileImage}
-          />
-          <Text style={styles.profileName}>Bienvenido!</Text>
-        </View>
-
-        {/* Barra de búsqueda */}
-        <View style={styles.searchContainer}>
-          <Icon
-            name="search"
-            size={20}
-            color="#bbb"
-            style={styles.searchIcon}
-          />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Buscar canciones o álbumes..."
-            placeholderTextColor="#bbb"
-            value={searchText}
-            onChangeText={setSearchText}
-          />
-        </View>
-
-        {/* Lista de canciones */}
-        <Text style={styles.sectionTitle}>Todas las Canciones</Text>
-        {loadingSongs ? (
-          <ActivityIndicator
-            size="large"
-            color="#1DB954"
-            style={styles.loader}
-          />
-        ) : (
-          <FlatList
-            data={filteredSongs}
-            renderItem={({ item }) => (
-              <TouchableOpacity onPress={() => handleSongSelect(item)}>
-                <View style={styles.songItem}>
-                  <Image
-                    source={{ uri: item.imageUrl }}
-                    style={styles.songImage}
-                  />
-                  <Text style={styles.songTitle}>{item.title}</Text>
-                  <Text style={styles.songArtist}>{item.artistName}</Text>
-                </View>
-              </TouchableOpacity>
-            )}
-            keyExtractor={(item) => item.id.toString()}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-          />
-        )}
-
-        {/* Lista de álbumes */}
-        <Text style={styles.sectionTitle}>Álbumes</Text>
-        {loadingAlbums ? (
-          <ActivityIndicator
-            size="large"
-            color="#1DB954"
-            style={styles.loader}
-          />
-        ) : (
-          <FlatList
-            data={filteredAlbums}
-            renderItem={({ item }) => (
-              <View style={styles.albumItem}>
-                <Image source={{ uri: item.image }} style={styles.albumImage} />
-                <Text style={styles.albumTitle}>{item.title}</Text>
-              </View>
-            )}
-            keyExtractor={(item) => item.id.toString()}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-          />
-        )}
-      </ScrollView>
-
-      {/* Reproductor flotante */}
-      <View style={styles.playerContainer}>
-        <View style={styles.player}>
-          {selectedSong ? (
-            <>
-              <Image
-                source={{ uri: selectedSong.imageUrl }}
-                style={styles.songImagePlayer}
+      {user ? (
+        <AppLayout onLogout={() => navigation.navigate("Login" as never)} userName={user.username}>
+          <ScrollView
+            style={[styles.scrollContent]}
+            contentContainerStyle={{ flexGrow: 1 }}
+          >
+            <View style={[styles.mainRow, { alignItems: "stretch" }]}>
+              <HomeLeftColumn
+                user={user}
+                songs={songs}
+                filteredSongs={filteredSongs}
+                loadingSongs={loadingSongs}
+                albums={albums}
+                filteredAlbums={filteredAlbums}
+                loadingAlbums={loadingAlbums}
+                searchText={searchText}
+                setSearchText={setSearchText}
+                onSongSelect={handleSongSelect}
+                barHeight={barHeight}
               />
-              <Text style={styles.songTitle}>{selectedSong.title}</Text>
-              <Text style={styles.songArtist}>{selectedSong.artistName}</Text>
-            </>
-          ) : (
-            <Text style={styles.noSongText}>No hay canción seleccionada</Text>
-          )}
-          <View style={styles.controls}>
-            <TouchableOpacity>
-              <Icon name="backward" size={35} color="#fff" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={togglePlayPause}
-              style={[
-                styles.button,
-                isPlaying ? styles.pauseButton : styles.playButton,
-              ]}
-            >
-              <Icon
-                name={isPlaying ? "pause" : "play"}
-                size={35}
-                color="#fff"
-              />
-            </TouchableOpacity>
-            <TouchableOpacity>
-              <Icon name="forward" size={35} color="#fff" />
-            </TouchableOpacity>
-          </View>
+            </View>
+          </ScrollView>
+        </AppLayout>
+      ) : (
+        <ActivityIndicator size="large" color="#1DB954" style={styles.loader} />
+      )}
 
-          <View style={styles.timeContainer}>
-            <Text style={styles.timeText}>
-              {formatTime(currentTime)} / {formatTime(player.duration)}
-            </Text>
-          </View>
-
-          {/* Slider */}
-          <Slider
-            style={styles.slider}
-            minimumValue={0}
-            maximumValue={1}
-            value={player.duration ? currentTime / player.duration : 0}
-            onValueChange={handleSliderChange}
-            minimumTrackTintColor="#1DB954"
-            maximumTrackTintColor="#ccc"
-            thumbTintColor="#fff"
-          />
-        </View>
-      </View>
+      <NowPlayingBar
+        song={selectedSong}
+        isPlaying={isPlaying}
+        currentTime={currentTime}
+        duration={player.duration}
+        onPlayPause={togglePlayPause}
+        onPrev={prevSong}
+        onNext={nextSong}
+        onSeek={handleSeek}
+        onBarLayout={(h: number) => setBarHeight(h)}
+        onToggleFavorite={(s: Song) => toggleFavorite(s)}
+        onAddToPlaylist={(s: Song) => handleAddToPlaylist(s)}
+        isFavorited={selectedSong ? favorites.has(selectedSong.id) : false}
+      />
     </View>
   );
 }
@@ -289,15 +196,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#000000ff",
   },
   scrollContent: {
-    paddingBottom: 100, // Esto asegura que el ScrollView no se superponga con el reproductor
+    paddingBottom: 100,
+    paddingTop: 12,
   },
-  player: {
-    width: "100%",
-    alignItems: "center",
-  },
-  slider: {
-    width: "100%",
-    marginTop: 20,
+  loader: {
+    marginVertical: 12,
   },
   profileContainer: {
     flexDirection: "row",
@@ -328,20 +231,31 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     marginBottom: 15,
   },
-  searchIcon: {
-    marginRight: 10,
-  },
-  searchInput: {
-    flex: 1,
-    color: "#fff",
-    fontSize: 16,
-  },
+  searchIcon: { marginRight: 10 },
+  searchInput: { flex: 1, color: "#fff", fontSize: 16 },
   sectionTitle: {
     color: "#fff",
     fontSize: 28,
     fontWeight: "bold",
     marginVertical: 10,
   },
+  mainRow: { flexDirection: "row", alignItems: "flex-start", flex: 1 },
+  leftColumn: { flex: 0, minHeight: 0 },
+  panelTitle: {
+    color: "#eaf6ff",
+    fontSize: 20,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+  panelAlbumItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  panelAlbumImage: { width: 64, height: 64, borderRadius: 8 },
+  panelAlbumTitle: { color: "#eaf6ff", marginLeft: 5, fontSize: 14 },
+  recoItem: { flexDirection: "row", alignItems: "center", paddingVertical: 8 },
+  recoImage: { width: 48, height: 48, borderRadius: 6 },
   songItem: {
     marginRight: 15,
     backgroundColor: "#453b3bff",
@@ -351,23 +265,14 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 15,
   },
-  songImage: {
-    width: "100%",
-    height: 120,
-    borderRadius: 10,
-    marginBottom: 10,
-  },
+  songImage: { width: "100%", height: 120, borderRadius: 10, marginBottom: 10 },
   songTitle: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
     textAlign: "center",
   },
-  songArtist: {
-    color: "#bbb",
-    fontSize: 14,
-    textAlign: "center",
-  },
+  songArtist: { color: "#bbb", fontSize: 14, textAlign: "center" },
   albumItem: {
     marginRight: 20,
     alignItems: "center",
@@ -390,70 +295,4 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textAlign: "center",
   },
-  playerContainer: {
-    position: "absolute",
-    bottom: 0,
-    right: 0,
-    padding: 20,
-    width: 380,
-    height: 380,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#20321eff",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-  },
-  controls: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-evenly",
-    width: "100%",
-    marginTop: 20,
-  },
-  button: {
-    paddingVertical: 15,
-    paddingHorizontal: 35,
-    borderRadius: 50,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 10,
-  },
-  playButton: {
-    backgroundColor: "#1DB954",
-  },
-  pauseButton: {
-    backgroundColor: "#FF5722",
-  },
-  timeContainer: {
-    marginTop: 10,
-    marginBottom: 15,
-  },
-  timeText: {
-    color: "#fff",
-    fontSize: 16,
-  },
-  songImagePlayer: {
-    width: "60%",
-    height: 150,
-    borderRadius: 20,
-    marginBottom: 10,
-  },
-  noSongText: {
-    color: "#fff",
-    fontSize: 16,
-    fontStyle: "italic",
-  },
-  logoutButton: {
-    backgroundColor: "#367d57ff",
-    paddingVertical: 15,
-    borderRadius: 40,
-    alignItems: "center",
-    justifyContent: "flex-start",
-    marginTop: 20,
-  },
-  logoutButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-}); 
+});

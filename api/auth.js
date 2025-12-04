@@ -1,4 +1,4 @@
-import api from "./axiosConfig.js";
+import api from "./conexion/axiosConfig.js";
 
 export const login = async (email, password) => {
     try {
@@ -22,6 +22,19 @@ export const register = async (username, email, password) => {
             username,
             email,
             password,
+        });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+export const me = async (token) => {
+    try {
+        const response = await api.get('/users/me', {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
         });
         return response.data;
     } catch (error) {

@@ -11,7 +11,7 @@ import {
 } from "react-native";
 
 export default function RegisterScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
 
   const SocialButton = ({ text, icon, onPress }: any) => (
     <Pressable

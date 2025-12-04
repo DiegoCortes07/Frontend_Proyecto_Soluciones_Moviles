@@ -1,4 +1,4 @@
-import api from "./axiosConfig.js";
+import api from "./conexion/axiosConfig.js";
 
 export const fetchAlbums = async () => {
     try {

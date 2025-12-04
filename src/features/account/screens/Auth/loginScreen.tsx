@@ -13,11 +13,13 @@ import {
 
 import { RootStackParamList } from "../../../../app/navigation/RootNavigator";
 import {login} from "../../../../../api/auth";
+import { useAuth } from "../../../../contexts/AuthContext";
 
 type NavProp = NativeStackNavigationProp<RootStackParamList, "Login">;
 
 export default function LoginScreen() {
   const navigation = useNavigation<NavProp>();
+  const { setToken } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -76,18 +78,22 @@ export default function LoginScreen() {
     console.log("Password:", password);
 
     login(email, password)
-      .then(() => {
+      .then((res: any) => {
         setErrorData(false);
-        
-        // lo enviamos al home con el token
-        navigation.navigate("Home");
-        console.log("Login exitoso");
+
+        // Extraer token de la respuesta (intenta varios campos comunes)
+        const token = res?.token || res?.accessToken || res?.user?.token || res?.data?.token;
+        if (token) {
+          setToken(token);
+        }
+        // Navegar a Home (token está en el contexto)
+        navigation.navigate("Home" as never);
+        console.log("Login exitoso, token:", token);
       })
       .catch(() => {
         setErrorData(true);
         shakeAnimation();
       });
-    
   };
 
   return (
