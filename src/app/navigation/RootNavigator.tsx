@@ -7,6 +7,7 @@ import HomeScreen from "../../features/home/screens/home";
 import LibraryScreen from "../../features/home/screens/Library";
 import AlbumScreen from "../../features/Album/screens/album";
 import { AuthProvider } from "../../contexts/AuthContext";
+import { PlayerProvider } from "../../contexts/PlayerContext";
 
 export type RootStackParamList = {
   Login: undefined;
@@ -22,17 +23,19 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export default function RootNavigator() {
   return (
     <AuthProvider>
-      <Stack.Navigator
-        initialRouteName="Login"
-        screenOptions={{ headerShown: false, headerBackVisible: false }}
-      >
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="Register" component={RegisterScreen} />
-        <Stack.Screen name="RegisterEmail" component={RegisterEmailScreen} />
-        <Stack.Screen name="Home" component={HomeScreen} />
-        <Stack.Screen name="Library" component={LibraryScreen} />
-        <Stack.Screen name="Album" component={AlbumScreen} />
-      </Stack.Navigator>
+      <PlayerProvider>
+        <Stack.Navigator
+          initialRouteName="Login"
+          screenOptions={{ headerShown: false, headerBackVisible: false }}
+        >
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Register" component={RegisterScreen} />
+          <Stack.Screen name="RegisterEmail" component={RegisterEmailScreen} />
+          <Stack.Screen name="Home" component={HomeScreen} />
+          <Stack.Screen name="Library" component={LibraryScreen} />
+          <Stack.Screen name="Album" component={AlbumScreen} />
+        </Stack.Navigator>
+      </PlayerProvider>
     </AuthProvider>
   );
 }

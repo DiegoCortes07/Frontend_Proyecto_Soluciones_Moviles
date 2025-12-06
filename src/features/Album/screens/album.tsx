@@ -9,11 +9,17 @@ import {
   TouchableOpacity,
   ScrollView,
 } from "react-native";
-import api from "../../../../api/conexion/axiosConfig";
 import Album from "../../../interfaces/Album";
 import Song from "../../../interfaces/Song";
+import { fetchSongsByAlbum, fetchAlbumDetails} from "../../../../api/album";
 import { useRoute, RouteProp } from "@react-navigation/native";
+import { usePlayer } from "../../../contexts/PlayerContext";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../../app/navigation/RootNavigator";
+import AppLayout from "../../../components/layout/AppLayout";
+import { useAuth } from "../../../contexts/AuthContext";
+import Icon from 'react-native-vector-icons/FontAwesome';
 
 type Props = {
   albumId?: number | string;
@@ -29,6 +35,10 @@ export default function AlbumScreen({ albumId }: Props) {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  const player = usePlayer();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { user, loading: authLoading } = useAuth();
+
   useEffect(() => {
     if (!id) {
       setError("No se indicó id de álbum");
@@ -40,16 +50,15 @@ export default function AlbumScreen({ albumId }: Props) {
       setLoading(true);
       setError(null);
       try {
-        const res = await api.get(`/albums/${id}`);
-        const data = res.data;
-        // Asumimos que la API devuelve { album: {...}, songs: [...] } o directamente el objeto
-        if (data.album) {
-          setAlbum(data.album);
-          setTracks(data.songs || []);
+        const albumRes = await fetchAlbumDetails(id);
+        const res = await fetchSongsByAlbum(id);
+
+        if (albumRes) {
+          setAlbum(albumRes);
+          setTracks(res || []);
         } else {
-          // si la respuesta es el álbum con posibilidad de songs
-          setAlbum(data);
-          setTracks(data.songs || []);
+          setTracks(res || []);
+          setAlbum(albumRes);
         }
       } catch (e: any) {
         console.error("Error fetching album:", e);
@@ -77,34 +86,68 @@ export default function AlbumScreen({ albumId }: Props) {
       </View>
     );
 
-  return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
-      <View style={styles.header}>
-        <Image source={{ uri: album.image }} style={styles.cover} />
-        <View style={styles.meta}>
-          <Text style={styles.title}>{album.title}</Text>
-          <Text style={styles.artist}>{album.artistName}</Text>
-        </View>
-      </View>
+  const onPlayTrack = async (track: Song) => {
+    try {
+      player.setPlaylist(tracks);
+      await player.playSong(track);
+    } catch (e) {
+      console.error("Error playing track:", e);
+    }
+  };
 
+  const header = (
+    <View style={styles.header}>
+      <TouchableOpacity
+        onPress={() => navigation.goBack()}
+        style={styles.backButton}
+        accessibilityLabel="volver-album"
+      >
+        <Icon name="chevron-left" size={18} color="#071428" />
+      </TouchableOpacity>
+      <Image source={{ uri: album.image }} style={styles.cover} />
+      <View style={styles.meta}>
+        <Text style={styles.title}>{album.title}</Text>
+        <Text style={styles.artist}>{album.artistName}</Text>
+      </View>
+    </View>
+  );
+
+  const content = (
+    <>
+      {header}
       <Text style={styles.section}>Canciones</Text>
       <FlatList
         data={tracks}
         keyExtractor={(t) => t.id.toString()}
-        renderItem={({ item, index }) => (
-          <TouchableOpacity style={styles.trackRow}>
-            <Text style={styles.trackIndex}>{index + 1}</Text>
-            <Image source={{ uri: item.imageUrl }} style={styles.trackImage} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.trackTitle}>{item.title}</Text>
-              <Text style={styles.trackArtist}>{item.artistName}</Text>
-            </View>
-          </TouchableOpacity>
-        )}
+        renderItem={({ item, index }) => {
+          const active = player.song?.id === item.id;
+          return (
+            <TouchableOpacity
+              style={[styles.trackRow, active ? { backgroundColor: "#071f30", borderRadius: 8, paddingHorizontal: 8 } : undefined]}
+              onPress={() => onPlayTrack(item)}
+            >
+              <Text style={styles.trackIndex}>{index + 1}</Text>
+              <Image source={{ uri: item.imageUrl }} style={styles.trackImage} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.trackTitle}>{item.title}</Text>
+                <Text style={styles.trackArtist}>{item.artistName}</Text>
+              </View>
+              {active && <Text style={{ color: "#1DB954", marginLeft: 8 }}>Reproduciendo</Text>}
+            </TouchableOpacity>
+          );
+        }}
         ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
         contentContainerStyle={{ paddingHorizontal: 16 }}
       />
-    </ScrollView>
+    </>
+  );
+
+  return (
+    <AppLayout userName={user?.username}>
+      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
+        {content}
+      </ScrollView>
+    </AppLayout>
   );
 }
 
@@ -112,6 +155,15 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#071428" },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
   header: { flexDirection: "row", padding: 16, alignItems: "center" },
+  backButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#eaf6ff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
   cover: { width: 160, height: 160, borderRadius: 8, marginRight: 16 },
   meta: { flex: 1 },
   title: { color: "#eaf6ff", fontSize: 22, fontWeight: "700", marginBottom: 6 },

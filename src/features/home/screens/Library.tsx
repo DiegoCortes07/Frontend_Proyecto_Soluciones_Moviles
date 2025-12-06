@@ -10,6 +10,8 @@
     import AppLayout from "../../../components/layout/AppLayout";
     import { useAuth } from "../../../contexts/AuthContext";
     import { ActivityIndicator } from "react-native";
+    import { getLikedSongs } from "../../../../api/like";
+    import Song from "../../../interfaces/Song";
 
   const playlists = [
     { id: 1, title: "Chill Vibes", image: "https://picsum.photos/seed/p1/200" },
@@ -17,13 +19,27 @@
     { id: 3, title: "Favorites", image: "https://picsum.photos/seed/p3/200" },
   ];
 
-  const likes = [
-    { id: 1, title: "Liked Songs", image: "https://picsum.photos/seed/l1/200" },
-    { id: 2, title: "Top 2025", image: "https://picsum.photos/seed/l2/200" },
-  ];
-
   export default function Library() {
       const { user, token, loading } = useAuth();
+      const [userLikesSong, setUserLikesSong] = useState<Song[]>([]);
+
+      useEffect(() => {
+        loadLikes();
+      }, [user, token]);
+
+      const loadLikes = async () => {
+        if (!user || !token) {
+          setUserLikesSong([]);
+          return;
+        }
+
+        try {
+          const likedSongs = await getLikedSongs(token);
+          setUserLikesSong(likedSongs);
+        } catch (error) {
+          console.error("Error loading liked songs:", error);
+        }
+      };
 
       const content = (
         <View style={styles.container}>
@@ -45,11 +61,11 @@
           <Text style={[styles.section, { marginTop: 18 }]}>Me gusta</Text>
           <FlatList
             horizontal
-            data={likes}
+            data={userLikesSong}
             keyExtractor={(i) => i.id.toString()}
             renderItem={({ item }) => (
               <TouchableOpacity style={styles.card}>
-                <Image source={{ uri: item.image }} style={styles.image} />
+                <Image source={{ uri: item.imageUrl }} style={styles.image} />
                 <Text style={styles.cardTitle}>{item.title}</Text>
               </TouchableOpacity>
             )}

@@ -1,19 +1,16 @@
 import React, { useEffect, useState } from "react";
-import { useRoute, RouteProp } from "@react-navigation/native";
 import { RootStackParamList } from "../../../app/navigation/RootNavigator";
 import { useNavigation} from "@react-navigation/native";
 import { View, StyleSheet, ScrollView, Alert, ActivityIndicator } from "react-native";
 import { fetchSongs } from "../../../../api/songs";
 import { fetchAlbums } from "../../../../api/album";
-import { useAudioPlayer } from "expo-audio";
 import AppLayout from "../../../components/layout/AppLayout";
-import NowPlayingBar from "../../../components/NowPlayingBar";
+import { usePlayer } from "../../../contexts/PlayerContext";
 import HomeLeftColumn from "../components/HomeLeftColumn";
 import { useAuth } from "../../../contexts/AuthContext";
 import Song from "../../../interfaces/Song";
 import Album from "../../../interfaces/Album";
-import User from "../../../interfaces/User";
-import { me } from "../../../../api/auth";
+import Artist from "../../../interfaces/Artist";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 export default function Home() {
@@ -29,7 +26,9 @@ export default function Home() {
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
   
 
-  const player = useAudioPlayer();
+  // shared player from PlayerContext
+  const player = usePlayer();
+  const { playSong, setPlaylist, togglePlayPause: togglePlayerPlay, song: ctxSong, isPlaying: ctxPlaying, currentTime: ctxTime, prev, next, seek } = player;
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList, "Home">>();
   const { user, token } = useAuth();
 
@@ -60,78 +59,26 @@ export default function Home() {
     }
   };
 
-  // user provided by AuthContext
-
   const handleSongSelect = async (song: Song) => {
     setSelectedSong(song);
     try {
-      player.seekTo(0);
-      await player.replace(song.cloudinarySecureUrl);
-      await player.play();
-      setIsPlaying(true);
+      await playSong(song);
     } catch (e) {
       console.error("Playback error:", e);
     }
   };
 
-  const togglePlayPause = async () => {
-    try {
-      if (isPlaying) {
-        await player.pause();
-        setIsPlaying(false);
-      } else {
-        await player.play();
-        setIsPlaying(true);
-      }
-    } catch (error) {
-      console.error("Error toggling playback:", error);
-    }
-  };
+  useEffect(() => {
+    // sync playlist with player context
+    setPlaylist(songs);
+  }, [songs]);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout | undefined;
-    if (isPlaying) {
-      interval = setInterval(() => {
-        setCurrentTime(player.currentTime || 0);
-      }, 1000);
-    }
-    return () => interval && clearInterval(interval);
-  }, [isPlaying, player.currentTime]);
-
-  const prevSong = async () => {
-    if (!selectedSong || songs.length === 0) return;
-    const idx = songs.findIndex((s) => s.id === selectedSong.id);
-    const newIdx = idx > 0 ? idx - 1 : songs.length - 1;
-    await handleSongSelect(songs[newIdx]);
-  };
-
-  const nextSong = async () => {
-    if (!selectedSong || songs.length === 0) return;
-    const idx = songs.findIndex((s) => s.id === selectedSong.id);
-    const newIdx = idx < songs.length - 1 ? idx + 1 : 0;
-    await handleSongSelect(songs[newIdx]);
-  };
-
-  const handleSeek = async (time: number) => {
-    setCurrentTime(time);
-    await player.seekTo(time);
-  };
-
-  const toggleFavorite = (song: Song) => {
-    setFavorites((prev) => {
-      const next = new Set(prev);
-      if (next.has(song.id)) next.delete(song.id);
-      else next.add(song.id);
-      return next;
-    });
-  };
-
-  const handleAddToPlaylist = (song: Song) => {
-    Alert.alert(
-      "Añadir a playlist",
-      `Agregar "${song.title}" a una playlist (placeholder).`
-    );
-  };
+    // keep selectedSong and play state in sync with context
+    if (ctxSong) setSelectedSong(ctxSong);
+    setIsPlaying(!!ctxPlaying);
+    setCurrentTime(ctxTime || 0);
+  }, [ctxSong, ctxPlaying, ctxTime]);
 
   const filteredSongs = songs.filter(
     (song) =>
@@ -140,7 +87,8 @@ export default function Home() {
   );
 
   const filteredAlbums = albums.filter((album) =>
-    album.title.toLowerCase().includes(searchText.toLowerCase())
+    album.title.toLowerCase().includes(searchText.toLowerCase()) ||
+    (album.artistName && album.artistName.toLowerCase().includes(searchText.toLowerCase()))
   );
 
   return (
@@ -171,21 +119,6 @@ export default function Home() {
       ) : (
         <ActivityIndicator size="large" color="#1DB954" style={styles.loader} />
       )}
-
-      <NowPlayingBar
-        song={selectedSong}
-        isPlaying={isPlaying}
-        currentTime={currentTime}
-        duration={player.duration}
-        onPlayPause={togglePlayPause}
-        onPrev={prevSong}
-        onNext={nextSong}
-        onSeek={handleSeek}
-        onBarLayout={(h: number) => setBarHeight(h)}
-        onToggleFavorite={(s: Song) => toggleFavorite(s)}
-        onAddToPlaylist={(s: Song) => handleAddToPlaylist(s)}
-        isFavorited={selectedSong ? favorites.has(selectedSong.id) : false}
-      />
     </View>
   );
 }

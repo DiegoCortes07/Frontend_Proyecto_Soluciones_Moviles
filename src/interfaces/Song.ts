@@ -4,4 +4,6 @@ export default interface Song {
   artistName: string;
   imageUrl: string;
   cloudinarySecureUrl: string;
+  artistId?: number;
+  albumId?: number;
 }

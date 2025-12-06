@@ -9,6 +9,7 @@ import {
   Dimensions,
   Animated,
   PanResponder,
+  ScrollView,
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import Slider from "@react-native-community/slider";
@@ -117,68 +118,90 @@ const NowPlayingBar: React.FC<Props> = ({
     });
   };
 
-  const renderModal = () => (
-    <Modal visible={expanded} animationType="none" onRequestClose={closeModal}>
-      <View style={styles.modalContainer}>
-        <TouchableOpacity style={styles.modalClose} onPress={closeModal}>
-          <Icon name="close" size={28} color="#eaf6ff" />
-        </TouchableOpacity>
-        <Animated.View
-          style={[
-            styles.modalContent,
-            {
-              transform: [
-                { translateY },
-                {
-                  scale: openAnim.interpolate({ inputRange: [0, 1], outputRange: [0.96, 1] }),
-                },
-              ],
-              opacity: openAnim,
-            },
-          ]}
-          {...panResponder.panHandlers}
-        >
-          {song ? (
-            <Image source={{ uri: song.imageUrl }} style={styles.modalCover} />
-          ) : (
-            <View style={styles.modalCoverPlaceholder} />
-          )}
+  const renderModal = () => {
+    const win = Dimensions.get("window");
+    const coverSize = Math.min(win.width * 0.84, win.height * 0.46);
 
-          <Text style={styles.modalTitle} numberOfLines={2}>{song ? song.title : "No song"}</Text>
-          <Text style={styles.modalArtist}>{song ? song.artistName : "—"}</Text>
+    return (
+      <Modal visible={expanded} animationType="none" onRequestClose={closeModal}>
+        <View style={styles.modalContainer}>
+          <TouchableOpacity style={styles.modalClose} onPress={closeModal}>
+            <Icon name="close" size={28} color="#eaf6ff" />
+          </TouchableOpacity>
+          <Animated.View
+            style={[
+              styles.modalContent,
+              {
+                transform: [
+                  { translateY },
+                  {
+                    scale: openAnim.interpolate({ inputRange: [0, 1], outputRange: [0.98, 1] }),
+                  },
+                ],
+                opacity: openAnim,
+              },
+            ]}
+            {...panResponder.panHandlers}
+          >
+            <ScrollView contentContainerStyle={{ alignItems: "center", paddingHorizontal: 24, paddingTop: 40 }}>
+              {song ? (
+                <Image source={{ uri: song.imageUrl }} style={[styles.modalCover, { width: coverSize, height: coverSize }]} />
+              ) : (
+                <View style={[styles.modalCoverPlaceholder, { width: coverSize, height: coverSize }]} />
+              )}
 
-          <View style={styles.modalControls}>
-            <TouchableOpacity onPress={onPrev}>
-              <Icon name="backward" size={36} color="#eaf6ff" />
-            </TouchableOpacity>
+              <Text style={styles.modalTitle} numberOfLines={2}>{song ? song.title : "No song"}</Text>
+              <Text style={styles.modalArtist}>{song ? song.artistName : "—"}</Text>
 
-            <TouchableOpacity onPress={onPlayPause} style={[styles.playButton, isPlaying ? styles.pause : styles.play]}>
-              <Icon name={isPlaying ? "pause" : "play"} size={28} color="#071428" />
-            </TouchableOpacity>
+              <View style={styles.modalControls}>
+                <TouchableOpacity onPress={onPrev}>
+                  <Icon name="backward" size={34} color="#eaf6ff" />
+                </TouchableOpacity>
 
-            <TouchableOpacity onPress={onNext}>
-              <Icon name="forward" size={36} color="#eaf6ff" />
-            </TouchableOpacity>
-          </View>
+                <TouchableOpacity onPress={onPlayPause} style={[styles.playButton, isPlaying ? styles.pause : styles.play]}>
+                  <Icon name={isPlaying ? "pause" : "play"} size={30} color="#071428" />
+                </TouchableOpacity>
 
-          <View style={styles.modalSliderWrap}>
-            <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
-            <Slider
-              style={{ flex: 1 }}
-              minimumValue={0}
-              maximumValue={1}
-              value={duration ? currentTime / duration : 0}
-              onValueChange={(v) => onSeek && onSeek(v * duration)}
-              minimumTrackTintColor="#1DB9FF"
-              maximumTrackTintColor="#ccc"
-              thumbTintColor="#fff"
-            />
-            <Text style={[styles.timeText, { textAlign: "right" }]}>{formatTime(duration)}</Text>
-          </View>
-        </Animated.View>
-      </View>
-    </Modal>
-  );
+                <TouchableOpacity onPress={onNext}>
+                  <Icon name="forward" size={34} color="#eaf6ff" />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.modalActionRow}>
+                <TouchableOpacity
+                  onPress={() => { if (song) onToggleFavorite && onToggleFavorite(song); }}
+                  style={styles.modalIconButton}
+                >
+                  <Icon name={localFavorited ? "heart" : "heart-o"} size={22} color={localFavorited ? "#ff6b81" : "#eaf6ff"} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => { if (song) onAddToPlaylist && onAddToPlaylist(song); }}
+                  style={styles.modalIconButton}
+                >
+                  <Icon name="plus" size={20} color="#eaf6ff" />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.modalSliderWrap}>
+                <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
+                <Slider
+                  style={{ flex: 1 }}
+                  minimumValue={0}
+                  maximumValue={1}
+                  value={duration ? currentTime / duration : 0}
+                  onValueChange={(v) => onSeek && onSeek(v * duration)}
+                  minimumTrackTintColor="#1DB9FF"
+                  maximumTrackTintColor="#ccc"
+                  thumbTintColor="#fff"
+                />
+                <Text style={[styles.timeText, { textAlign: "right" }]}>{formatTime(duration)}</Text>
+              </View>
+            </ScrollView>
+          </Animated.View>
+        </View>
+      </Modal>
+    );
+  };
 
   return (
     <Animated.View
@@ -394,19 +417,22 @@ const styles = StyleSheet.create({
     backgroundColor: "#071428",
   },
   modalClose: {
-    marginTop: 40,
-    marginLeft: 16,
+    position: 'absolute',
+    top: 40,
+    left: 16,
+    zIndex: 20,
   },
   modalContent: {
     flex: 1,
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "flex-start",
     paddingHorizontal: 24,
+    paddingTop: 80,
     backgroundColor: "transparent",
   },
   modalCover: {
-    width: Dimensions.get("window").width * 0.8,
-    height: Dimensions.get("window").width * 0.8,
+    width: Dimensions.get("window").width * 0.84,
+    height: Dimensions.get("window").width * 0.84,
     borderRadius: 8,
     marginBottom: 20,
     shadowColor: "#000",
@@ -424,22 +450,35 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     color: "#eaf6ff",
-    fontSize: 22,
-    fontWeight: "700",
+    fontSize: 28,
+    fontWeight: "800",
     textAlign: "center",
+    marginTop: 6,
   },
   modalArtist: {
     color: "#9fd6ff",
-    fontSize: 16,
-    marginBottom: 20,
+    fontSize: 18,
+    marginBottom: 18,
   },
   modalControls: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    width: "60%",
-    marginBottom: 18,
+    width: "62%",
+    marginBottom: 12,
     marginTop: 14,
+  },
+  modalActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 18,
+    marginBottom: 12,
+  },
+  modalIconButton: {
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.02)'
   },
   modalSliderWrap: {
     flexDirection: "row",

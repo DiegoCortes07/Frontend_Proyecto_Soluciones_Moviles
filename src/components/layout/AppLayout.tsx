@@ -5,6 +5,8 @@ import { useNavigation, useNavigationState } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../app/navigation/RootNavigator";
 import { useAuth } from "../../contexts/AuthContext";
+import NowPlayingBar from "../NowPlayingBar";
+import { usePlayer } from "../../contexts/PlayerContext";
 
 type NavProp = NativeStackNavigationProp<RootStackParamList, "Library">;
 
@@ -14,7 +16,6 @@ const AppLayout: React.FC<{
   userName?: string;
 }> = ({ children, onLogout, userName = "Usuario" }) => {
   const navigation = useNavigation<NavProp>();
-  const [openMenu, setOpenMenu] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const auth = useAuth();
 
@@ -24,13 +25,14 @@ const AppLayout: React.FC<{
     return route?.name ?? "";
   });
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await player.stopAndCleanup();
     auth.logout();
     onLogout?.();
     navigation.navigate("Login" as never);
   };
 
-  const resolvedName = auth.user?.username || userName;
+  const player = usePlayer();
 
   return (
     <View style={styles.wrapper}>
@@ -106,7 +108,21 @@ const AppLayout: React.FC<{
         <View style={{ flex: 1 }} />
       </View>
 
-      <View style={styles.content}>{children}</View>
+      <View style={[styles.content, { paddingBottom: 100 }]}>{children}</View>
+
+      <NowPlayingBar
+        song={player.song}
+        isPlaying={player.isPlaying}
+        currentTime={player.currentTime}
+        duration={player.duration}
+        onPlayPause={player.togglePlayPause}
+        onPrev={player.prev}
+        onNext={player.next}
+        onSeek={player.seek}
+        onToggleFavorite={player.toggleFavorite}
+        onAddToPlaylist={player.addToPlaylist}
+        isFavorited={player.song ? player.isFavorited(player.song.id) : false}
+      />
     </View>
   );
 };

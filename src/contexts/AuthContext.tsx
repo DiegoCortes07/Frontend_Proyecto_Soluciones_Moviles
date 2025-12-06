@@ -44,7 +44,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loadUser(token);
   }, [token]);
 
-  const logout = () => {
+  const logout = async () => {
     setTokenState(undefined);
     setUser(null);
   };
