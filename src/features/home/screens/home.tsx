@@ -16,6 +16,7 @@ import { fetchSongs } from "../../../../api/songs";
 import { fetchAlbums } from "../../../../api/album";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { AudioPlayer, useAudioPlayer } from "expo-audio"; // Usando expo-audio
+import { useDeleteData } from "../hooks/appStorage";
 
 // Tipos de Song y Album (si es necesario para TypeScript)
 interface Song {
@@ -136,13 +137,20 @@ export default function Home() {
   };
 
   const logout = async () => {
-    navigation.navigate("Login");
+    useDeleteData("Session")
+    .catch((err) => {
+      console.error(err);
+    })
+    navigation.navigate("Login" as never);
   };
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <TouchableOpacity onPress={logout} style={styles.logoutButton}>
           <Text style={styles.logoutButtonText}>Cerrar sesión</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={()=>{navigation.navigate("ProfileSettings" as never)}} style={styles.logoutButton}>
+          <Text style={styles.logoutButtonText}>config per</Text>
         </TouchableOpacity>
         {/* Barra de perfil */}
         <View style={styles.profileContainer}>

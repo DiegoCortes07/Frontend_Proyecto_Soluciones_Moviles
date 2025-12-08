@@ -1,4 +1,5 @@
-import api from "./axiosConfig.js";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { publicApi as api, authApi } from "./axiosConfig.js";
 
 export const login = async (email, password) => {
     try {
@@ -31,6 +32,34 @@ export const register = async (username, email, password) => {
         throw error;
     }
 };
+
+export const updateUserData = async (formData) =>{
+    try {
+        let token = "";
+        await AsyncStorage.getItem("Session")
+            .then((data)=>{token=data;})
+            .catch((err)=>{console.log(err);})
+        const response = await authApi.put('/users/updateprofile', formData, {
+            headers: {"Content-Type":"multipart/form-data", "Authorization": `Bearer ${token}`}
+        });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+export const getUserData = async ()=>{
+    try {
+        let token = "";
+        await AsyncStorage.getItem("Session")
+            .then((data)=>{token=data;})
+            .catch((err)=>{console.log(err);})
+        const response = await authApi.get('/users/getuser', {headers: {"Authorization": `Bearer ${token}`}});
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
 
 export const validateEmail = async (token) =>{
     try {

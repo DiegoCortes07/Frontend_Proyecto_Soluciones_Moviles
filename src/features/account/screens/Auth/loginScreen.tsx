@@ -1,6 +1,6 @@
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { 
   View, 
   Text, 
@@ -8,11 +8,13 @@ import {
   TouchableOpacity, 
   StyleSheet,
   Image, 
-  Animated
+  Animated,
+  BackHandler
 } from "react-native";
 
 import { RootStackParamList } from "../../../../app/navigation/RootNavigator";
 import {login} from "../../../../../api/auth";
+import { useSaveData } from "../../../home/hooks/appStorage";
 
 type NavProp = NativeStackNavigationProp<RootStackParamList, "Login">;
 
@@ -78,6 +80,24 @@ export default function LoginScreen() {
     outputRange: ["0px", "8px"],
   });
 
+  useFocusEffect(
+    // El useCallback asegura que el listener solo se cree cuando el componente
+    // se enfoca (es visible).
+    useCallback(() => {
+      // Define la función que se ejecutará al presionar el botón de retroceso.
+      const onBackPress = () => {
+        BackHandler.exitApp();
+        return true; 
+      };
+
+      // Adjunta el listener cuando la pantalla está enfocada.
+      const event = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+      // Limpia el listener cuando la pantalla pierde el foco
+      return () => event.remove();
+    }, [])
+  );
+
   const handleLogin = () => {
     if(blockedLogin) return;
 
@@ -86,9 +106,13 @@ export default function LoginScreen() {
  
     
     login(email, password)
-      .then(() => {
+      .then((data) => {
         setErrorData(false);
-        
+        //Guarda el token de manera local
+        useSaveData("Session",data.user.token)
+        .catch((err)=>{
+          console.error(err);
+        })
         // lo enviamos al home con el token
         navigation.navigate("Home");
         console.log("Login exitoso");
