@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useRef, useState } from "r
 import { useAudioPlayer } from "expo-audio";
 import Song from "../interfaces/Song";
 import { likeSong, getLikedSongs } from "../../api/like";
+import { createPlaylist, addSongToPlaylist, fetchUserPlaylists, removeSongFromPlaylist, deletePlaylist } from "../../api/playlist";
 import { useAuth } from "./AuthContext";
 
 type PlayerContextType = {
@@ -13,6 +14,7 @@ type PlayerContextType = {
   playlist: Song[];
   likedSongsSet: Set<number>;
   setPlaylist: (list: Song[]) => void;
+  playQueue: (songs: Song[], startIndex?: number) => Promise<void>;
   playSong: (s: Song) => Promise<void>;
   togglePlayPause: () => Promise<void>;
   prev: () => Promise<void>;
@@ -34,8 +36,13 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [currentTime, setCurrentTime] = useState(0);
   const [playlist, setPlaylistState] = useState<Song[]>([]);
   const [likedSongsSet, setLikedSongsSet] = useState<Set<number>>(new Set());
+  const [playlists, setPlaylists] = useState<any[]>([]);
+  const [pickerVisible, setPickerVisible] = useState(false);
+  const [songToAdd, setSongToAdd] = useState<Song | null>(null);
+  const [loadingPlaylists, setLoadingPlaylists] = useState(false);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const autoAdvanceRef = useRef<number | null>(null);
 
   useEffect(() => {
     const loadLikedSongs = async () => {
@@ -45,7 +52,8 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
       try {
         const songs = await getLikedSongs(token);
-        const ids = new Set<number>(songs.map((song: Song) => song.id).filter((id: number | undefined): id is number => id !== undefined));
+        const list = Array.isArray(songs) ? songs : [];
+        const ids = new Set<number>(list.map((song: Song) => song.id).filter((id: number | undefined): id is number => id !== undefined));
         setLikedSongsSet(ids);
       } catch (e) {
         console.error("Error loading liked songs:", e);
@@ -72,13 +80,26 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const setPlaylist = (list: Song[]) => setPlaylistState(list || []);
 
+  const playQueue = async (songs: Song[], startIndex: number = 0) => {
+    if (!songs || songs.length === 0) return;
+    setPlaylistState(songs);
+    const idx = Math.min(Math.max(startIndex, 0), songs.length - 1);
+    await playSong(songs[idx]);
+  };
+
   const playSong = async (s: Song) => {
-    setSong(s);
     try {
+      if (song?.id === s.id) {
+        await player.play();
+        setIsPlaying(true);
+        return;
+      }
       await player.replace(s.cloudinarySecureUrl);
       await player.seekTo(0);
       await player.play();
+      setSong(s);
       setIsPlaying(true);
+      autoAdvanceRef.current = null;
     } catch (e) {
       console.error("Player error:", e);
     }
@@ -112,6 +133,22 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     await playSong(playlist[newIdx]);
   };
 
+  useEffect(() => {
+    const duration = player.duration || 0;
+    if (!song || !isPlaying || duration <= 0) return;
+
+    const remaining = duration - currentTime;
+    if (remaining <= 0.75) {
+      if (autoAdvanceRef.current !== song.id) {
+        autoAdvanceRef.current = song.id ?? null;
+        next();
+      }
+    } else {
+      // Reset guard when we're safely away from the end (e.g., after seeking back)
+      autoAdvanceRef.current = null;
+    }
+  }, [currentTime, isPlaying, song, player.duration, next]);
+
   const seek = async (time: number) => {
     setCurrentTime(time);
     try {
@@ -130,26 +167,118 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       console.warn("Song has no ID, cannot like");
       return;
     }
+    const wasFavorited = likedSongsSet.has(s.id);
+
+    setLikedSongsSet(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(s.id)) {
+        newSet.delete(s.id);
+      } else {
+        newSet.add(s.id);
+      }
+      return newSet;
+    });
     try {
       await likeSong(token, s.id);
-      // Update local set optimistically
+    } catch (e) {
+      console.error("Toggle favorite error:", e); 
       setLikedSongsSet(prev => {
         const newSet = new Set(prev);
-        if (newSet.has(s.id)) {
-          newSet.delete(s.id);
+        if (wasFavorited) {
+          newSet.add(s.id!);
         } else {
-          newSet.add(s.id);
+          newSet.delete(s.id!);
         }
         return newSet;
       });
-    } catch (e) {
-      console.error("Toggle favorite error:", e);
     }
   };
 
   const addToPlaylist = (s: Song) => {
-    // placeholder
-    console.log("addToPlaylist", s.id);
+    setSongToAdd(s);
+  };
+
+  useEffect(() => {
+    if (songToAdd) {
+      // open picker after songToAdd is set
+      setPickerVisible(true);
+    }
+  }, [songToAdd]);
+
+  const closePicker = () => {
+    setPickerVisible(false);
+    setSongToAdd(null);
+  };
+
+  const loadPlaylists = async () => {
+    if (!token) return;
+    try {
+      setLoadingPlaylists(true);
+      const list = await fetchUserPlaylists(token);
+      setPlaylists(Array.isArray(list) ? list : []);
+    } catch (e) {
+      console.error("Error loading playlists:", e);
+      setPlaylists([]);
+    } finally {
+      setLoadingPlaylists(false);
+    }
+  };
+
+  const handleCreatePlaylist = async (name: string, description?: string) => {
+    if (!token) throw new Error("No token");
+    const created = await createPlaylist(token, name, description || "");
+    // refresh playlists list
+    await loadPlaylists();
+    return created;
+  };
+
+  const handleAddSongToPlaylist = async (playlistId: number, songId?: number) => {
+    console.log('handleAddSongToPlaylist called', { tokenPresent: !!token, playlistId, songId, songToAddId: songToAdd?.id });
+    if (!token) throw new Error("Missing token");
+    const idToAdd = songId ?? songToAdd?.id;
+    if (!idToAdd) throw new Error("Missing song id");
+    try {
+      const res = await addSongToPlaylist(token, playlistId, idToAdd);
+      // optionally refresh playlists (depending on API)
+      await loadPlaylists();
+      closePicker();
+      return res;
+    } catch (e) {
+      console.error('Error in handleAddSongToPlaylist API call:', e);
+      throw e;
+    }
+  };
+
+  const handleDeletePlaylist = async (playlistId: number) => {
+    console.log("handleDeletePlaylist called", { tokenPresent: !!token, playlistId });
+    if (!token) {
+      console.warn("Cannot delete playlist: no token");
+      throw new Error("No token");
+    }
+    try {
+      const res = await deletePlaylist(token, playlistId);
+      await loadPlaylists();
+      return res;
+    } catch (e) {
+      console.error("Error in handleDeletePlaylist API call:", e);
+      throw e;
+    }
+  };
+
+  const handleRemoveSongFromPlaylist = async (playlistId: number, songId: number) => {
+    console.log("handleRemoveSongFromPlaylist called", { tokenPresent: !!token, playlistId, songId });
+    if (!token) {
+      console.warn("Cannot remove song: no token");
+      throw new Error("No token");
+    }
+    try {
+      const res = await removeSongFromPlaylist(token, playlistId, songId);
+      await loadPlaylists();
+      return res;
+    } catch (e) {
+      console.error("Error in handleRemoveSongFromPlaylist API call:", e);
+      throw e;
+    }
   };
 
   const isFavorited = (songId: number): boolean => {
@@ -183,6 +312,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         likedSongsSet,
         token,
         setPlaylist,
+        playQueue,
         playSong,
         togglePlayPause,
         prev,
@@ -195,6 +325,24 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }}
     >
       {children}
+      {pickerVisible ? (() => {
+        const Picker = require("../components/PlaylistPicker").default;
+        return (
+            <Picker
+              visible={pickerVisible}
+              playlists={playlists}
+              loading={loadingPlaylists}
+              onClose={closePicker}
+              onRefresh={loadPlaylists}
+              onCreate={handleCreatePlaylist}
+              onAddSong={handleAddSongToPlaylist}
+              onDeletePlaylist={handleDeletePlaylist}
+              onRemoveSong={handleRemoveSongFromPlaylist}
+              songToAddId={songToAdd?.id}
+              songToAddTitle={songToAdd?.title}
+            />
+        );
+      })() : null}
     </PlayerContext.Provider>
   );
 };

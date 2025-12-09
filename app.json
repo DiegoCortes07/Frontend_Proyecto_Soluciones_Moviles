@@ -15,10 +15,15 @@
     },
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.spotifyclone.app",
+      "buildNumber": "1.0.0",
       "infoPlist": {
         "UIBackgroundModes": [
           "audio"
-        ]
+        ],
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        }
       }
     },
     "android": {

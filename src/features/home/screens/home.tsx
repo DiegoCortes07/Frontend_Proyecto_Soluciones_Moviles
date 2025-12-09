@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { RootStackParamList } from "../../../app/navigation/RootNavigator";
 import { useNavigation} from "@react-navigation/native";
-import { View, StyleSheet, ScrollView, Alert, ActivityIndicator } from "react-native";
+import { View, StyleSheet, ActivityIndicator, Dimensions, ScrollView } from "react-native";
 import { fetchSongs } from "../../../../api/songs";
 import { fetchAlbums } from "../../../../api/album";
 import AppLayout from "../../../components/layout/AppLayout";
@@ -10,10 +10,11 @@ import HomeLeftColumn from "../components/HomeLeftColumn";
 import { useAuth } from "../../../contexts/AuthContext";
 import Song from "../../../interfaces/Song";
 import Album from "../../../interfaces/Album";
-import Artist from "../../../interfaces/Artist";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 export default function Home() {
+  const { width } = Dimensions.get("window");
+  const isMobile = width < 768;
   const [songs, setSongs] = useState<Song[]>([]);
   const [albums, setAlbums] = useState<Album[]>([]);
   const [loadingSongs, setLoadingSongs] = useState(true);
@@ -40,7 +41,12 @@ export default function Home() {
   const loadSongs = async () => {
     try {
       const response = await fetchSongs();
-      setSongs(response);
+      const list = Array.isArray(response)
+        ? response
+        : Array.isArray((response as any)?.songs)
+        ? (response as any).songs
+        : [];
+      setSongs(list);
     } catch (error) {
       console.error("Error fetching songs:", error);
     } finally {
@@ -80,10 +86,10 @@ export default function Home() {
     setCurrentTime(ctxTime || 0);
   }, [ctxSong, ctxPlaying, ctxTime]);
 
-  const filteredSongs = songs.filter(
+  const filteredSongs = (songs || []).filter(
     (song) =>
-      song.title.toLowerCase().includes(searchText.toLowerCase()) ||
-      song.artistName.toLowerCase().includes(searchText.toLowerCase())
+      (song.title || "").toLowerCase().includes(searchText.toLowerCase()) ||
+      (song.artistName || "").toLowerCase().includes(searchText.toLowerCase())
   );
 
   const filteredAlbums = albums.filter((album) =>
@@ -96,23 +102,32 @@ export default function Home() {
       {user ? (
         <AppLayout onLogout={() => navigation.navigate("Login" as never)} userName={user.username}>
           <ScrollView
-            style={[styles.scrollContent]}
+            style={styles.scrollContent}
             contentContainerStyle={{ flexGrow: 1 }}
+            showsVerticalScrollIndicator={false}
+            nestedScrollEnabled
           >
-            <View style={[styles.mainRow, { alignItems: "stretch" }]}>
-              <HomeLeftColumn
-                user={user}
-                songs={songs}
-                filteredSongs={filteredSongs}
-                loadingSongs={loadingSongs}
-                albums={albums}
-                filteredAlbums={filteredAlbums}
-                loadingAlbums={loadingAlbums}
-                searchText={searchText}
-                setSearchText={setSearchText}
-                onSongSelect={handleSongSelect}
-                barHeight={barHeight}
-              />
+            <View
+              style={[
+                styles.mainRow,
+                isMobile && { flexDirection: "column" },
+              ]}
+            >
+              <View style={isMobile ? { width: "100%" } : { flex: 1 }}>
+                <HomeLeftColumn
+                  user={user}
+                  songs={songs}
+                  filteredSongs={filteredSongs}
+                  loadingSongs={loadingSongs}
+                  albums={albums}
+                  filteredAlbums={filteredAlbums}
+                  loadingAlbums={loadingAlbums}
+                  searchText={searchText}
+                  setSearchText={setSearchText}
+                  onSongSelect={handleSongSelect}
+                  barHeight={barHeight}
+                />
+              </View>
             </View>
           </ScrollView>
         </AppLayout>
@@ -126,11 +141,11 @@ export default function Home() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#000000ff",
+    backgroundColor: "#050d1a",
   },
   scrollContent: {
     paddingBottom: 100,
-    paddingTop: 12,
+    paddingTop: 8,
   },
   loader: {
     marginVertical: 12,
@@ -173,7 +188,7 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   mainRow: { flexDirection: "row", alignItems: "flex-start", flex: 1 },
-  leftColumn: { flex: 0, minHeight: 0 },
+  leftColumn: { flex: 1, minHeight: 0 },
   panelTitle: {
     color: "#eaf6ff",
     fontSize: 20,

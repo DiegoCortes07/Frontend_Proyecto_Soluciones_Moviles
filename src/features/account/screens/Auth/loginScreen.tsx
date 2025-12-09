@@ -8,7 +8,10 @@ import {
   TouchableOpacity, 
   StyleSheet,
   Image, 
-  Animated
+  Animated,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
 } from "react-native";
 
 import { RootStackParamList } from "../../../../app/navigation/RootNavigator";
@@ -70,7 +73,7 @@ export default function LoginScreen() {
 
   const loginGlow = animation.interpolate({
     inputRange: [0, 1],
-    outputRange: ["0px", "8px"],
+    outputRange: [0, 8],
   });
 
   const handleLogin = () => {
@@ -97,16 +100,24 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={styles.backgroundContainer}>
-      {/* GRADIENTE ANIMADO */}
-      <Animated.View style={[styles.gradient1]} />
-      <Animated.View style={[styles.gradient2]} />
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={styles.backgroundContainer}
+    >
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* GRADIENTE ANIMADO */}
+        <Animated.View style={[styles.gradient1]} />
+        <Animated.View style={[styles.gradient2]} />
 
-      <View style={styles.container}>
+        <View style={styles.container}>
 
         {/* Logo */}
         <Image 
-          source={{ uri: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/React-icon.svg/512px-React-icon.svg.png" }}
+          source={{ uri: "https://repositorio.iica.int/assets/images/IICA/Spotify.png" }}
           style={styles.logo}
         />
 
@@ -174,7 +185,8 @@ export default function LoginScreen() {
           <Text style={styles.registerText}>Crear una cuenta</Text>
         </TouchableOpacity>
       </View>
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -182,30 +194,32 @@ const styles = StyleSheet.create({
   backgroundContainer: {
     flex: 1,
     backgroundColor: "#0d0d0d",
+  },
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: "center",
     alignItems: "center",
+    minHeight: "100%",
   },
 
   gradient1: {
     position: "absolute",
     width: 300,
     height: 300,
-    borderRadius: 999,
-    backgroundColor: "rgba(29,185,84,0.25)",
+    borderRadius: 150,
+    backgroundColor: "rgba(25, 174, 204, 0.25)",
     top: -40,
     left: -80,
-    filter: "blur(60px)",
   },
 
   gradient2: {
     position: "absolute",
     width: 300,
     height: 300,
-    borderRadius: 999,
+    borderRadius: 150,
     backgroundColor: "rgba(0,150,255,0.20)",
     bottom: -40,
     right: -80,
-    filter: "blur(60px)",
   },
 
   container: {
@@ -219,8 +233,8 @@ const styles = StyleSheet.create({
   },
 
   logo: {
-    width: 110,
-    height: 110,
+    width: 150,
+    height: 150,
     marginBottom: 30,
   },
 

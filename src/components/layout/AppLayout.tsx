@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions, Platform, Alert } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useNavigation, useNavigationState } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -7,6 +8,9 @@ import { RootStackParamList } from "../../app/navigation/RootNavigator";
 import { useAuth } from "../../contexts/AuthContext";
 import NowPlayingBar from "../NowPlayingBar";
 import { usePlayer } from "../../contexts/PlayerContext";
+
+// Declarar window para TypeScript en web
+declare const window: any;
 
 type NavProp = NativeStackNavigationProp<RootStackParamList, "Library">;
 
@@ -26,16 +30,40 @@ const AppLayout: React.FC<{
   });
 
   const handleLogout = async () => {
-    await player.stopAndCleanup();
-    auth.logout();
-    onLogout?.();
-    navigation.navigate("Login" as never);
+    // Mostrar confirmación antes de cerrar sesión
+    if (Platform.OS === "web") {
+      if (window.confirm("¿Estás seguro de que deseas cerrar sesión?")) {
+        await player.stopAndCleanup();
+        auth.logout();
+        onLogout?.();
+        navigation.navigate("Login" as never);
+      }
+    } else {
+      Alert.alert(
+        "Cerrar sesión",
+        "¿Estás seguro de que deseas cerrar sesión?",
+        [
+          { text: "Cancelar", style: "cancel" },
+          {
+            text: "Cerrar sesión",
+            style: "destructive",
+            onPress: async () => {
+              await player.stopAndCleanup();
+              auth.logout();
+              onLogout?.();
+              navigation.navigate("Login" as never);
+            },
+          },
+        ]
+      );
+    }
   };
 
   const player = usePlayer();
 
   return (
-    <View style={styles.wrapper}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <View style={styles.wrapper}>
       <View style={styles.sidebar}>
         <TouchableOpacity style={styles.logoWrap}>
           <Image
@@ -46,69 +74,71 @@ const AppLayout: React.FC<{
           <Text style={styles.logoText}>SpotifyClone</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.navItem, currentRouteName === "Home" ? styles.navActive : undefined]}
-          onPress={() => navigation.navigate("Home" as never)}
-        >
-          <Icon name="home" size={18} color="#fff" />
-          <Text style={styles.navText}>Inicio</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.navItem, currentRouteName === "Library" ? styles.navActive : undefined]}
-          onPress={() => navigation.navigate("Library" as never)}
-        >
-          <Icon name="book" size={18} color="#eaf6ff" />
-          <Text style={styles.navText}>Tu biblioteca</Text>
-        </TouchableOpacity>
-
-        <View style={{ width: "100%" }}>
+        <View style={styles.navRow}>
           <TouchableOpacity
-            style={[styles.navItem]}
-            onPress={() => setProfileMenuOpen((p) => !p)}
-            accessibilityLabel="nav-mi-perfil"
+            style={[styles.navItem, currentRouteName === "Home" ? styles.navActive : undefined]}
+            onPress={() => navigation.navigate("Home" as never)}
           >
-            <Icon name="user" size={16} color="#eaf6ff" />
-            <Text style={styles.navText}>Mi perfil</Text>
+            <Icon name="home" size={18} color="#fff" />
+            <Text style={styles.navText}>Inicio</Text>
           </TouchableOpacity>
 
-          {profileMenuOpen && (
-            <View style={[styles.userMenu, { marginTop: 6, paddingVertical: 4 }]}> 
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => {
-                  setProfileMenuOpen(false);
-                  navigation.navigate("Home" as never);
-                }}
-              >
-                <Text style={styles.menuText}>Ver perfil</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => {
-                  setProfileMenuOpen(false);
-                  navigation.navigate("Home" as never);
-                }}
-              >
-                <Text style={styles.menuText}>Ajustes</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => {
-                  setProfileMenuOpen(false);
-                  handleLogout();
-                }}
-              >
-                <Text style={[styles.menuText, { color: "#ffdddd" }]}>Cerrar sesión</Text>
-              </TouchableOpacity>
-            </View>
-          )}
+          <TouchableOpacity
+            style={[styles.navItem, currentRouteName === "Library" ? styles.navActive : undefined]}
+            onPress={() => navigation.navigate("Library" as never)}
+          >
+            <Icon name="book" size={18} color="#eaf6ff" />
+            <Text style={styles.navText}>Tu biblioteca</Text>
+          </TouchableOpacity>
+
+          <View style={{ width: "100%", flex: isMobileView ? 1 : 0 }}>
+            <TouchableOpacity
+              style={[styles.navItem]}
+              onPress={() => setProfileMenuOpen((p) => !p)}
+              accessibilityLabel="nav-mi-perfil"
+            >
+              <Icon name="user" size={16} color="#eaf6ff" />
+              <Text style={styles.navText}>Mi perfil</Text>
+            </TouchableOpacity>
+
+            {profileMenuOpen && (
+              <View style={[styles.userMenu, { marginTop: 6, paddingVertical: 4 }]}> 
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => {
+                    setProfileMenuOpen(false);
+                    navigation.navigate("Home" as never);
+                  }}
+                >
+                  <Text style={styles.menuText}>Ver perfil</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => {
+                    setProfileMenuOpen(false);
+                    navigation.navigate("Home" as never);
+                  }}
+                >
+                  <Text style={styles.menuText}>Ajustes</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => {
+                    setProfileMenuOpen(false);
+                    handleLogout();
+                  }}
+                >
+                  <Text style={[styles.menuText, { color: "#ffdddd" }]}>Cerrar sesión</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
         </View>
 
         <View style={{ flex: 1 }} />
       </View>
 
-      <View style={[styles.content, { paddingBottom: 100 }]}>{children}</View>
+      <View style={[styles.content, { paddingBottom: isMobileView ? 150 : 115 }]}>{children}</View>
 
       <NowPlayingBar
         song={player.song}
@@ -124,28 +154,45 @@ const AppLayout: React.FC<{
         isFavorited={player.song ? player.isFavorited(player.song.id) : false}
       />
     </View>
+    </SafeAreaView>
   );
 };
 
+const { width: screenWidth } = Dimensions.get("window");
+const isMobileView = screenWidth < 600;
+
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#071428",
+  },
   wrapper: {
     flex: 1,
-    flexDirection: "row",
+    flexDirection: isMobileView ? "column" : "row",
     backgroundColor: "#071428",
   },
   sidebar: {
-    width: 220,
-    paddingTop: 28,
+    width: isMobileView ? "100%" : 220,
+    paddingTop: isMobileView ? 12 : 28,
     paddingHorizontal: 12,
     backgroundColor: "#071428",
-    borderRightWidth: 1,
+    borderRightWidth: isMobileView ? 0 : 1,
+    borderBottomWidth: isMobileView ? 1 : 0,
     borderRightColor: "#133b63",
-    alignItems: "flex-start",
+    borderBottomColor: isMobileView ? "#133b63" : "transparent",
+    alignItems: isMobileView ? "stretch" : "flex-start",
+    maxHeight: isMobileView ? "auto" : "100%",
     shadowColor: "#000",
-    shadowOffset: { width: 4, height: 0 },
+    shadowOffset: { width: isMobileView ? 0 : 4, height: isMobileView ? 2 : 0 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
-    elevation: 6,
+    elevation: isMobileView ? 2 : 6,
+  },
+  navRow: {
+    flexDirection: isMobileView ? "row" : "column",
+    alignItems: "center",
+    justifyContent: isMobileView ? "space-between" : "flex-start",
+    width: "100%",
   },
   logoWrap: {
     flexDirection: "row",
@@ -166,11 +213,13 @@ const styles = StyleSheet.create({
   navItem: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 6,
-    width: "100%",
-    borderRadius: 6,
-    marginBottom: 6,
+    justifyContent: "center",
+    paddingVertical: isMobileView ? 8 : 10,
+    paddingHorizontal: 8,
+    width: isMobileView ? "100%" : "100%",
+    flex: isMobileView ? 1 : 0,
+    borderRadius: 8,
+    marginBottom: isMobileView ? 0 : 6,
   },
   navActive: {
     backgroundColor: "#0b3b5a",
@@ -233,7 +282,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 16,
+    padding: isMobileView ? 8 : 16,
   },
   footer: {
     color: "#9fd6ff",
