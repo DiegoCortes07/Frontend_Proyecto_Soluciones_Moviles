@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { me } from "../../api/auth";
 import User from "../interfaces/User";
+import { useDeleteData } from "../features/home/hooks/appStorage";
 
 type AuthContextValue = {
   token?: string;
@@ -47,6 +48,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     setTokenState(undefined);
     setUser(null);
+    useDeleteData("session");
   };
 
   const refreshUser = async () => loadUser(token);

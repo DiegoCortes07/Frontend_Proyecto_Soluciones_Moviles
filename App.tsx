@@ -15,6 +15,19 @@ const queryClient = new QueryClient({
   },
 });
 
+//Permite que paginas se puedan acceder desde url
+const linking = {
+  prefixes: ["miapp://", "http://localhost:8081/"],
+  config: {
+    screens: {
+      VerifyMail: {
+        path: "verify-mail",
+        parse: {token: (value: any) => value}
+      }
+    },
+  }
+};
+
 export default function App() {
   return (
     <SafeAreaProvider>
@@ -24,7 +37,7 @@ export default function App() {
           backgroundColor="transparent" 
           translucent={Platform.OS === "android"}
         />
-        <NavigationContainer>
+        <NavigationContainer linking={linking}>
           <RootNavigator />
         </NavigationContainer>
       </QueryClientProvider>

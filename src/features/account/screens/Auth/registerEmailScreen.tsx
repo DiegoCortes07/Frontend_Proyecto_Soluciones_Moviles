@@ -14,6 +14,8 @@ import {
 import Icon from 'react-native-vector-icons/FontAwesome';
 
 export default function RegisterEmailScreen() {
+  const navigation = useNavigation();
+  
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordCopy, setPasswordCopy] = useState("");
@@ -29,7 +31,6 @@ export default function RegisterEmailScreen() {
 
   const completeDat = useRef(true);
 
-  const navigation = useNavigation();
 
   const handleRegister = () => {
     console.log("Usuario:", username); // Debe ser 'Diafx'

@@ -1,6 +1,6 @@
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { 
   View, 
   Text, 
@@ -12,11 +12,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  BackHandler
 } from "react-native";
 
 import { RootStackParamList } from "../../../../app/navigation/RootNavigator";
 import {login} from "../../../../../api/auth";
 import { useAuth } from "../../../../contexts/AuthContext";
+import { useSaveData } from "../../../home/hooks/appStorage";
 
 type NavProp = NativeStackNavigationProp<RootStackParamList, "Login">;
 
@@ -29,7 +31,13 @@ export default function LoginScreen() {
   const [visiblePass, setVisiblePass] = useState(false);
 
   const [errorData, setErrorData] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("Credenciales inválidas")
+  const [seconds, setSeconds] = useState(0);
+  const [blockedLogin, setBlockedLogin] = useState(false);
+
   const canSubmit = useRef(false);
+  const loginAttempts = useRef(0);
+  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Animación botón
   const animation = useRef(new Animated.Value(0)).current;
@@ -55,6 +63,7 @@ export default function LoginScreen() {
   };
 
   useEffect(() => {
+    if(blockedLogin) return;
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     const active =
@@ -76,10 +85,31 @@ export default function LoginScreen() {
     outputRange: [0, 8],
   });
 
+  useFocusEffect(
+    // El useCallback asegura que el listener solo se cree cuando el componente
+    // se enfoca (es visible).
+    useCallback(() => {
+      // Define la función que se ejecutará al presionar el botón de retroceso.
+      const onBackPress = () => {
+        BackHandler.exitApp();
+        return true; 
+      };
+
+      // Adjunta el listener cuando la pantalla está enfocada.
+      const event = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+      // Limpia el listener cuando la pantalla pierde el foco
+      return () => event.remove();
+    }, [])
+  );
+
   const handleLogin = () => {
+    if(blockedLogin) return;
+
     console.log("Email:", email);
     console.log("Password:", password);
-
+ 
+    
     login(email, password)
       .then((res: any) => {
         setErrorData(false);
@@ -88,16 +118,45 @@ export default function LoginScreen() {
         const token = res?.token || res?.accessToken || res?.user?.token || res?.data?.token;
         if (token) {
           setToken(token);
+          useSaveData("session",token);
         }
         // Navegar a Home (token está en el contexto)
         navigation.navigate("Home" as never);
         console.log("Login exitoso, token:", token);
       })
-      .catch(() => {
+      .catch((error) => {
+        if(error.message == "Cuenta inhabilitada"){
+          setErrorMessage("Esta cuenta aun no esta activada, revise su email.");
+        }
+        else{
+          setErrorMessage("Credenciales inválidas");
+        }
+        loginAttempts.current++;
         setErrorData(true);
         shakeAnimation();
       });
+    
+    if((loginAttempts.current + 1)%5 == 0){
+      setBlockedLogin(true);
+      animateButton(false);
+      setSeconds(25);
+
+      timer.current = setInterval(() => {
+        setSeconds(prev => prev - 1);
+        setBlockedLogin(true);
+      }, 1000);
+    }
+
   };
+
+  useEffect(()=>{
+    
+    if(seconds<= 0 && !!timer.current){
+      clearInterval(timer.current); 
+      timer.current = null;
+      setBlockedLogin(false);
+    }
+  }, [seconds]);
 
   return (
     <KeyboardAvoidingView 
@@ -176,7 +235,17 @@ export default function LoginScreen() {
         </Animated.View>
 
         {errorData && 
-          <Text style={styles.errorText}>Credenciales inválidas</Text>
+          <Text style={styles.errorText}>{errorMessage}</Text>
+        }
+
+        {blockedLogin &&
+          <>
+          <Text style={styles.subtitle}>Demasiados intentos fallidos.</Text>
+          <Text style={styles.subtitle}>Espere la siguiente cantidad de tiempo.</Text>
+          <Text style={styles.title}>{seconds}</Text>
+          <Text style={styles.title}>Segundos.</Text>
+          </>
+
         }
 
         <Text style={styles.divider}>────────  o  ────────</Text>
