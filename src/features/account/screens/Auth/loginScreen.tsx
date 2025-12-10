@@ -9,17 +9,22 @@ import {
   StyleSheet,
   Image, 
   Animated,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
   BackHandler
 } from "react-native";
 
 import { RootStackParamList } from "../../../../app/navigation/RootNavigator";
 import {login} from "../../../../../api/auth";
+import { useAuth } from "../../../../contexts/AuthContext";
 import { useSaveData } from "../../../home/hooks/appStorage";
 
 type NavProp = NativeStackNavigationProp<RootStackParamList, "Login">;
 
 export default function LoginScreen() {
   const navigation = useNavigation<NavProp>();
+  const { setToken } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -77,7 +82,7 @@ export default function LoginScreen() {
 
   const loginGlow = animation.interpolate({
     inputRange: [0, 1],
-    outputRange: ["0px", "8px"],
+    outputRange: [0, 8],
   });
 
   useFocusEffect(
@@ -106,16 +111,18 @@ export default function LoginScreen() {
  
     
     login(email, password)
-      .then((data) => {
+      .then((res: any) => {
         setErrorData(false);
-        //Guarda el token de manera local
-        useSaveData("Session",data.user.token)
-        .catch((err)=>{
-          console.error(err);
-        })
-        // lo enviamos al home con el token
-        navigation.navigate("Home");
-        console.log("Login exitoso");
+
+        // Extraer token de la respuesta (intenta varios campos comunes)
+        const token = res?.token || res?.accessToken || res?.user?.token || res?.data?.token;
+        if (token) {
+          setToken(token);
+          useSaveData("session",token);
+        }
+        // Navegar a Home (token está en el contexto)
+        navigation.navigate("Home" as never);
+        console.log("Login exitoso, token:", token);
       })
       .catch((error) => {
         if(error.message == "Cuenta inhabilitada"){
@@ -152,16 +159,24 @@ export default function LoginScreen() {
   }, [seconds]);
 
   return (
-    <View style={styles.backgroundContainer}>
-      {/* GRADIENTE ANIMADO */}
-      <Animated.View style={[styles.gradient1]} />
-      <Animated.View style={[styles.gradient2]} />
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={styles.backgroundContainer}
+    >
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* GRADIENTE ANIMADO */}
+        <Animated.View style={[styles.gradient1]} />
+        <Animated.View style={[styles.gradient2]} />
 
-      <View style={styles.container}>
+        <View style={styles.container}>
 
         {/* Logo */}
         <Image 
-          source={{ uri: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/React-icon.svg/512px-React-icon.svg.png" }}
+          source={{ uri: "https://repositorio.iica.int/assets/images/IICA/Spotify.png" }}
           style={styles.logo}
         />
 
@@ -239,7 +254,8 @@ export default function LoginScreen() {
           <Text style={styles.registerText}>Crear una cuenta</Text>
         </TouchableOpacity>
       </View>
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -247,30 +263,32 @@ const styles = StyleSheet.create({
   backgroundContainer: {
     flex: 1,
     backgroundColor: "#0d0d0d",
+  },
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: "center",
     alignItems: "center",
+    minHeight: "100%",
   },
 
   gradient1: {
     position: "absolute",
     width: 300,
     height: 300,
-    borderRadius: 999,
-    backgroundColor: "rgba(29,185,84,0.25)",
+    borderRadius: 150,
+    backgroundColor: "rgba(25, 174, 204, 0.25)",
     top: -40,
     left: -80,
-    filter: "blur(60px)",
   },
 
   gradient2: {
     position: "absolute",
     width: 300,
     height: 300,
-    borderRadius: 999,
+    borderRadius: 150,
     backgroundColor: "rgba(0,150,255,0.20)",
     bottom: -40,
     right: -80,
-    filter: "blur(60px)",
   },
 
   container: {
@@ -284,8 +302,8 @@ const styles = StyleSheet.create({
   },
 
   logo: {
-    width: 110,
-    height: 110,
+    width: 150,
+    height: 150,
     marginBottom: 30,
   },
 

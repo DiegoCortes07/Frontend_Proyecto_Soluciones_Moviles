@@ -10,37 +10,36 @@ import {
   Alert,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { getUserData, updateUserData } from '../../../../api/auth';
+import { updateUserData } from '../../../../api/auth';
+import { useAuth } from '../../../contexts/AuthContext';
 
 
 export default function ProfileScreen() {
-  const [profileImageUri, setProfileImageUri] = useState("C:/Users/alter/projects/DSM/Frontend_Proyecto_Soluciones_Moviles/assets/images/user-icon.png");
+  const defaultAvatar =
+  "https://media.istockphoto.com/id/1495088043/es/vector/icono-de-perfil-de-usuario-avatar-o-icono-de-persona-foto-de-perfil-símbolo-de-retrato.jpg?s=612x612&w=0&k=20&c=mY3gnj2lU7khgLhV6dQBNqomEGj3ayWH-xtpYuCXrzk=";
+  const [profileImageUri, setProfileImageUri] = useState(defaultAvatar);
   const [username, setUsername] = useState("");
   // const [alias, setAlias] = useState("");
   const [email, setEmail] = useState("");
   const [errName, setErrName] = useState(false);
   const [invalidEmail, setInvalidEmail] = useState(false);
   const [invalidPhoto, setInvalidPhoto] = useState(false);
-
+  
   const imageChanged = useRef(false);
   const dataOriginal = useRef({name: "", email: ""});
+  const { user, token } = useAuth();
+
 
   useEffect( () => {
-    getUserData()
-      .then((data)=>{
-        if(data.user.profile){
-          setProfileImageUri(data.user.profile);
-          setUsername(data.user.name);
-          setEmail(data.user.email);
-          dataOriginal.current.name = data.user.name;
-          dataOriginal.current.email = data.user.email;
-
-        }
-
-      })
-      .catch((err)=>{
-        console.log(err);
-      }) 
+    if(user){
+      if(user.profilePhoto){
+        setProfileImageUri(user.profilePhoto);
+      }
+      setUsername(user.username);
+      setEmail(user.email);
+      dataOriginal.current.name = username;
+      dataOriginal.current.email = email;
+    }
   },[]); 
 
   useEffect(() => {

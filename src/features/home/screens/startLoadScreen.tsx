@@ -7,7 +7,7 @@ export default function StartLoadScreen (){
   const navigation = useNavigation();
 
     useEffect(()=>{
-        useLoadData("Session")
+        useLoadData("session")
         .then((data) => {
             navigation.navigate("Home" as never);
         })

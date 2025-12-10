@@ -9,14 +9,12 @@ import {
   StyleSheet,
   Image,
   ScrollView,
+  Linking,
 } from "react-native";
-import { RootStackParamList } from "../../../../app/navigation/RootNavigator";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-
-type NavProp = NativeStackNavigationProp<RootStackParamList, "Login">;
+import Icon from 'react-native-vector-icons/FontAwesome';
 
 export default function RegisterEmailScreen() {
-  const navigation = useNavigation<NavProp>();
+  const navigation = useNavigation();
   
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -28,6 +26,9 @@ export default function RegisterEmailScreen() {
   const [invalidCopyPass, setInvalidCopyPass] = useState(false);
   const [errorMessage, setErrorMessage] = useState(""); // Estado para el mensaje de error
 
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [termsError, setTermsError] = useState("");
+
   const completeDat = useRef(true);
 
 
@@ -35,6 +36,12 @@ export default function RegisterEmailScreen() {
     console.log("Usuario:", username); // Debe ser 'Diafx'
     console.log("Email:", email); // Debe ser 'diego@test.com'
     console.log("Password:", password); // Debe ser 'Password123$'
+
+    // Validar aceptación de términos y condiciones
+    if (!acceptedTerms) {
+      setTermsError("Debes aceptar los términos y condiciones.");
+      return;
+    }
 
     // Intentar registrar el usuario
     register(username, email, password)
@@ -184,6 +191,28 @@ export default function RegisterEmailScreen() {
           </View>
         )}
 
+        {/* Aceptación de términos */}
+        <View style={styles.termsContainer}>
+          <TouchableOpacity
+            style={styles.termsRow}
+            onPress={() => {
+              setAcceptedTerms((v) => !v);
+              setTermsError("");
+            }}
+          >
+            <View style={[styles.checkbox, acceptedTerms && styles.checkboxChecked]}>
+              {acceptedTerms && <Icon name="check" size={14} color="#071428" />}
+            </View>
+            <Text style={styles.termsText}>
+              Acepto los{' '}
+              <Text style={styles.termsLink} onPress={() => Linking.openURL('https://example.com/terms')}>
+                Términos y Condiciones
+              </Text>
+            </Text>
+          </TouchableOpacity>
+          {termsError !== '' && <Text style={styles.termsErrorText}>{termsError}</Text>}
+        </View>
+
         {/* Botón Registrar */}
         <TouchableOpacity onPress={handleRegister}>
           <View style={styles.registerButton}>
@@ -195,7 +224,7 @@ export default function RegisterEmailScreen() {
 
         <TouchableOpacity
           style={{ marginTop: 20 }}
-          onPress={() => navigation.navigate("Login")}
+          onPress={() => navigation.navigate("Login" as never)}
         >
           <Text style={styles.loginLink}>
             ¿Ya tienes una cuenta?{" "}
@@ -291,5 +320,41 @@ const styles = StyleSheet.create({
     color: "#ccc",
     fontSize: 16,
     textAlign: "center",
+  },
+  termsContainer: {
+    width: '100%',
+    marginTop: 12,
+    marginBottom: 6,
+  },
+  termsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#444',
+    backgroundColor: '#111',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  checkboxChecked: {
+    backgroundColor: '#1DB954',
+    borderColor: '#1DB954',
+  },
+  termsText: {
+    color: '#ccc',
+    flex: 1,
+  },
+  termsLink: {
+    color: '#1DB954',
+    textDecorationLine: 'underline',
+  },
+  termsErrorText: {
+    color: '#ff8a8a',
+    marginTop: 8,
   },
 });
