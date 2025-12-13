@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { use, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -87,8 +87,12 @@ export default function Library() {
           try {
             const songs = await getPlaylistSongs(pl.id);
             songsByPlaylist[pl.id] = songs || [];
-            if (songs && songs.length > 0 && songs[0].imageUrl) {
-              covers[pl.id] = songs[0].imageUrl;
+            if(!pl.image_url){
+              if (songs && songs.length > 0 && songs[0].imageUrl) {
+                covers[pl.id] = songs[0].imageUrl;
+              }
+            }else{
+              covers[pl.id] = pl.image_url;
             }
           } catch (err) {
             console.error("Error fetching playlist songs:", err);

@@ -31,7 +31,7 @@ export default function RootNavigator() {
     <AuthProvider>
       <PlayerProvider>
         <Stack.Navigator
-          initialRouteName="Login"
+          initialRouteName="StartLoad"
           screenOptions={{ headerShown: false, headerBackVisible: false }}
         >
           <Stack.Screen name="StartLoad" component={StartLoadScreen} />

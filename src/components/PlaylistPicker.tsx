@@ -309,12 +309,14 @@ const PlaylistPicker: React.FC<{
             <View style={styles.createBox}>
               <TextInput
                 placeholder="Nombre"
+                placeholderTextColor= "#c4c4c4ff"
                 value={name}
                 onChangeText={setName}
                 style={styles.input}
               />
               <TextInput
                 placeholder="Descripción (opcional)"
+                placeholderTextColor= "#c4c4c4ff"
                 value={description}
                 onChangeText={setDescription}
                 style={styles.input}
@@ -396,7 +398,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.04)",
     padding: 10,
     borderRadius: 8,
-    color: "#fff",
+    color: "#ffffffff",
     marginBottom: 8,
   },
   createActions: { flexDirection: "row", justifyContent: "space-between" },

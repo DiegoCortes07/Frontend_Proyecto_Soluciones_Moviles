@@ -86,6 +86,14 @@ export const EditPlaylistModal: React.FC<EditPlaylistModalProps> = ({
           }
           return;
         }
+        if (!selectedImage.fileName?.includes(".jpeg")) {
+          if (Platform.OS === "web") {
+            window.alert("La imagen debe ser en formato JPEG.");
+          } else {
+            Alert.alert("Error", "La imagen debe ser en formato JPEG.");
+          }
+          return;
+        }
         
         // Preparar el archivo para upload
         const imageFile = {

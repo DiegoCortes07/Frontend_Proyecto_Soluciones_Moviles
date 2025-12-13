@@ -1,4 +1,4 @@
-import { publicApi as api, authApi } from "./conexion/axiosConfig.js";
+import api from "./conexion/axiosConfig.js";
 
 export const login = async (email, password) => {
     try {
@@ -32,15 +32,12 @@ export const register = async (username, email, password) => {
     }
 };
 
-export const updateUserData = async (formData) =>{
+export const updateUserData = async (formData, token) =>{
     try {
-        let token = "";
-        await AsyncStorage.getItem("Session")
-            .then((data)=>{token=data;})
-            .catch((err)=>{console.log(err);})
-        const response = await authApi.put('/users/updateprofile', formData, {
+        const response = await api.put('/users/updateprofile', formData, {
             headers: {"Content-Type":"multipart/form-data", "Authorization": `Bearer ${token}`}
         });
+        console.log(response.data)
         return response.data;
     } catch (error) {
         throw error;

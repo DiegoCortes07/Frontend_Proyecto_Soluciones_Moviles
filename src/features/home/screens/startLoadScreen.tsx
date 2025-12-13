@@ -2,13 +2,16 @@ import { useEffect } from "react";
 import { useLoadData } from "../hooks/appStorage";
 import { StyleSheet, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import { useAuth } from "../../../contexts/AuthContext";
 
 export default function StartLoadScreen (){
   const navigation = useNavigation();
+  const { setToken } = useAuth();
 
     useEffect(()=>{
         useLoadData("session")
         .then((data) => {
+            setToken(data)
             navigation.navigate("Home" as never);
         })
         .catch((err)=>{

@@ -1,21 +1,27 @@
-import { Modal as RNModal, ModalProps, KeyboardAvoidingView, View, StyleSheet } from "react-native";
+import { Modal as RNModal, ModalProps, KeyboardAvoidingView, View, StyleSheet, Pressable } from "react-native";
 
 type Props = ModalProps & {
     isOpen: boolean,
     withInput?: boolean
+    outsidePress?: () => void
 }
 
-export const Popup = ({ isOpen, withInput, children, ...rest}: Props) => {
+export const Popup = ({ isOpen, withInput, outsidePress, children, ...rest}: Props) => {
     const content = withInput ? (
         <KeyboardAvoidingView
             style={styles.cointainer}
             behavior="height">
-        
+            {children}
         </KeyboardAvoidingView>
     ) : (
-        <View style={styles.cointainer}>
-            {children}
-        </View>
+
+        <Pressable style={{ width:"100%", height:"100%"}} onPress={outsidePress}>
+            <Pressable
+                onPress={(e) => e.stopPropagation()} // evita cerrar al tocar dentro
+            >
+                {children}
+            </Pressable>
+        </Pressable>
     );
 
     return (
@@ -33,9 +39,9 @@ export const Popup = ({ isOpen, withInput, children, ...rest}: Props) => {
 
 const styles = StyleSheet.create({
     cointainer: {
+        
         justifyContent: "center", 
         flex:1, 
-        backgroundColor: "#00000036", 
         alignItems:"center" 
     },
 });
