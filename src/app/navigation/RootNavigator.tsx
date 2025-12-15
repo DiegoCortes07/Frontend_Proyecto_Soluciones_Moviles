@@ -11,6 +11,7 @@ import LibraryScreen from "../../features/home/screens/Library";
 import AlbumScreen from "../../features/Album/screens/album";
 import { AuthProvider } from "../../contexts/AuthContext";
 import { PlayerProvider } from "../../contexts/PlayerContext";
+import ChangePassScreen from "../../features/account/screens/Auth/changePassScreen";
 
 export type RootStackParamList = {
   Login: undefined;
@@ -22,6 +23,7 @@ export type RootStackParamList = {
   StartLoad: undefined;
   VerifyMail: undefined;
   ProfileSettings: undefined;
+  ChangePassword: undefined;
   Album: { id: number };
 };
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -43,6 +45,7 @@ export default function RootNavigator() {
           <Stack.Screen name="Album" component={AlbumScreen} />
           <Stack.Screen name="VerifyMail" component={VerifyMail} />
           <Stack.Screen name="ProfileSettings" component={ProfileScreen}/>
+          <Stack.Screen name="ChangePassword" component={ChangePassScreen}/>
         </Stack.Navigator>
       </PlayerProvider>
     </AuthProvider>

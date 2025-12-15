@@ -64,3 +64,14 @@ export const validateEmail = async (token) =>{
         throw(error);
     }
 };
+export const updatePass = async (token, password, newpass) => {
+    try {
+        const response = await api.post('/users/updatepass', {
+            password,
+            newpass
+        },{headers: {Authorization: `Bearer ${token}`}});
+    return response.data;
+    } catch (error) {
+        throw error;
+    }
+}

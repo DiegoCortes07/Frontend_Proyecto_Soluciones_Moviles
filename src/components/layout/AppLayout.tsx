@@ -23,7 +23,7 @@ const AppLayout: React.FC<{
   const navigation = useNavigation<NavProp>();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [dontClose, setDontClose] = useState(false);
-  const buttonRef = useRef(null);
+  const buttonRef = useRef<View>(null);
   const [modalPos, setModalPos] = useState({x:0,y:0});
   const auth = useAuth();
 
@@ -122,25 +122,28 @@ const AppLayout: React.FC<{
 
             <Popup isOpen={profileMenuOpen} outsidePress={() => setProfileMenuOpen((p) => !p)}>
               <View style={[styles.userMenu, { marginTop: 6, paddingVertical: 4, top: (modalPos.y), left: (modalPos.x) }]} > 
+                {/*Ver Perfil */}
                 <TouchableOpacity
                   
-                  style={styles.menuItem}
-                  onPress={() => {
-                    setProfileMenuOpen(false);
-                    navigation.navigate("Home" as never);
-                  }}
-                >
-                  <Text style={styles.menuText}>Ver perfil</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
                   style={styles.menuItem}
                   onPress={() => {
                     setProfileMenuOpen(false);
                     navigation.navigate("ProfileSettings" as never);
                   }}
                 >
+                  <Text style={styles.menuText}>Ver perfil</Text>
+                </TouchableOpacity>
+                {/*Ver Ajustes */}
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => {
+                    setProfileMenuOpen(false);
+                    navigation.navigate("ChangePassword" as never);
+                  }}
+                >
                   <Text style={styles.menuText}>Ajustes</Text>
                 </TouchableOpacity>
+                {/*Cerrar sesión */}
                 <TouchableOpacity
                   style={styles.menuItem}
                   onPress={() => {
