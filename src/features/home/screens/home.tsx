@@ -1,32 +1,38 @@
 import React, { useEffect, useState } from "react";
 import { RootStackParamList } from "../../../app/navigation/RootNavigator";
 import { useNavigation} from "@react-navigation/native";
-import { View, StyleSheet, ActivityIndicator, Dimensions, ScrollView } from "react-native";
+import { View, StyleSheet, ActivityIndicator, Dimensions, ScrollView, Image } from "react-native";
 import { fetchSongs } from "../../../../api/songs";
 import { fetchAlbums } from "../../../../api/album";
+import { getAllPodcasts } from "../../../../api/podcast";
 import AppLayout from "../../../components/layout/AppLayout";
 import { usePlayer } from "../../../contexts/PlayerContext";
 import HomeLeftColumn from "../components/HomeLeftColumn";
 import { useAuth } from "../../../contexts/AuthContext";
 import Song from "../../../interfaces/Song";
 import Album from "../../../interfaces/Album";
+import Podcast from "../../../interfaces/Podcast";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { getSongImageUrl } from "../../../utils/imageHelper";
+import { useMemo } from "react";
 
 export default function Home() {
   const { width } = Dimensions.get("window");
   const isMobile = width < 768;
   const [songs, setSongs] = useState<Song[]>([]);
   const [albums, setAlbums] = useState<Album[]>([]);
+  const [podcasts, setPodcasts] = useState<Podcast[]>([]);
   const [loadingSongs, setLoadingSongs] = useState(true);
   const [loadingAlbums, setLoadingAlbums] = useState(true);
+  const [loadingPodcasts, setLoadingPodcasts] = useState(true);
   const [selectedSong, setSelectedSong] = useState<Song | null>(null);
   const [searchText, setSearchText] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [barHeight, setBarHeight] = useState<number>(84);
-  const [favorites, setFavorites] = useState<Set<number>>(new Set());
-  
+  const [imagesReady, setImagesReady] = useState(false);
 
+  
   // shared player from PlayerContext
   const player = usePlayer();
   const { playSong, setPlaylist, togglePlayPause: togglePlayerPlay, song: ctxSong, isPlaying: ctxPlaying, currentTime: ctxTime, prev, next, seek } = player;
@@ -36,6 +42,7 @@ export default function Home() {
   useEffect(() => {
     loadSongs();
     loadAlbums();
+    loadPodcasts();
   }, []);
 
   const loadSongs = async () => {
@@ -46,7 +53,11 @@ export default function Home() {
         : Array.isArray((response as any)?.songs)
         ? (response as any).songs
         : [];
-      setSongs(list);
+      // Aplicar filtro de explícitos al cargar si el usuario los tiene desactivados
+      const filteredByExplicit = (user && user.explicitContent === false)
+        ? (list || []).filter((s: Song) => !s.explicit)
+        : list;
+      setSongs(filteredByExplicit);
     } catch (error) {
       console.error("Error fetching songs:", error);
     } finally {
@@ -65,6 +76,49 @@ export default function Home() {
     }
   };
 
+  const loadPodcasts = async () => {
+    try {
+      const response = await getAllPodcasts();
+      const list = Array.isArray(response)
+        ? response
+        : Array.isArray((response as any)?.podcasts)
+        ? (response as any).podcasts
+        : [];
+      setPodcasts(list);
+    } catch (error) {
+      console.error("Error fetching podcasts:", error);
+    } finally {
+      setLoadingPodcasts(false);
+    }
+  };
+
+  const prefetchHomeImages = async (songsList: Song[], albumsList: Album[], podcastsList: Podcast[]) => {
+    try {
+      setImagesReady(false);
+      const songUrls = (songsList || []).map((s) =>
+        getSongImageUrl(s?.imageUrl || (s as any)?.image)
+      );
+      const albumUrls = (albumsList || []).map((a) =>
+        getSongImageUrl(a?.image || (a as any)?.imageUrl)
+      );
+      const podcastUrls = (podcastsList || []).map((p) =>
+        getSongImageUrl(p?.image || (p as any)?.imageUrl)
+      );
+      const urls = Array.from(new Set([...songUrls, ...albumUrls, ...podcastUrls].filter(Boolean)));
+      if (!urls.length) {
+        setImagesReady(true);
+        return;
+      }
+      await Promise.all(
+        urls.map((uri) => Image.prefetch(uri).catch(() => false))
+      );
+      setImagesReady(true);
+    } catch (e) {
+      console.warn("Error prefetching home images", e);
+      setImagesReady(true);
+    }
+  };
+
   const handleSongSelect = async (song: Song) => {
     setSelectedSong(song);
     try {
@@ -74,10 +128,23 @@ export default function Home() {
     }
   };
 
+  // Lista visible según configuración de explícitos (independiente de búsqueda)
+  const visibleSongs = useMemo(() => {
+    return (user && user.explicitContent === false)
+      ? (songs || []).filter((s) => !s.explicit)
+      : songs;
+  }, [songs, user?.explicitContent]);
+
   useEffect(() => {
-    // sync playlist with player context
-    setPlaylist(songs);
-  }, [songs]);
+    // sync playlist with player context usando las canciones visibles
+    setPlaylist(visibleSongs);
+  }, [visibleSongs]);
+
+  useEffect(() => {
+    if (!loadingSongs && !loadingAlbums && !loadingPodcasts) {
+      prefetchHomeImages(songs, albums, podcasts);
+    }
+  }, [loadingSongs, loadingAlbums, loadingPodcasts, songs, albums, podcasts]);
 
   useEffect(() => {
     // keep selectedSong and play state in sync with context
@@ -86,50 +153,74 @@ export default function Home() {
     setCurrentTime(ctxTime || 0);
   }, [ctxSong, ctxPlaying, ctxTime]);
 
-  const filteredSongs = (songs || []).filter(
-    (song) =>
-      (song.title || "").toLowerCase().includes(searchText.toLowerCase()) ||
-      (song.artistName || "").toLowerCase().includes(searchText.toLowerCase())
-  );
+  const filteredSongs = (songs || [])
+    .filter((song) => {
+      const q = searchText.toLowerCase();
+      return (
+        (song.title || "").toLowerCase().includes(q) ||
+        (song.artistName || "").toLowerCase().includes(q)
+      );
+    })
+    .filter((song) => {
+      // Si el usuario tiene desactivado el contenido explícito, ocultar canciones explícitas
+      const explicitDisabled = user && user.explicitContent === false;
+      return explicitDisabled ? !song.explicit : true;
+    });
 
   const filteredAlbums = albums.filter((album) =>
     album.title.toLowerCase().includes(searchText.toLowerCase()) ||
     (album.artistName && album.artistName.toLowerCase().includes(searchText.toLowerCase()))
   );
 
+  const filteredPodcasts = podcasts.filter((podcast) =>
+    podcast.title.toLowerCase().includes(searchText.toLowerCase()) ||
+    (podcast.artistName && podcast.artistName.toLowerCase().includes(searchText.toLowerCase()))
+  );
+
+  const showContent = !loadingSongs && !loadingAlbums && !loadingPodcasts && imagesReady;
+
   return (
     <View style={styles.container}>
       {user ? (
         <AppLayout onLogout={() => navigation.navigate("Login" as never)} userName={user.username}>
-          <ScrollView
-            style={styles.scrollContent}
-            contentContainerStyle={{ flexGrow: 1 }}
-            showsVerticalScrollIndicator={false}
-            nestedScrollEnabled
-          >
-            <View
-              style={[
-                styles.mainRow,
-                isMobile && { flexDirection: "column" },
-              ]}
+          {showContent ? (
+            <ScrollView
+              style={styles.scrollContent}
+              contentContainerStyle={{ flexGrow: 1 }}
+              showsVerticalScrollIndicator={false}
+              nestedScrollEnabled
             >
-              <View style={isMobile ? { width: "100%" } : { flex: 1 }}>
-                <HomeLeftColumn
-                  user={user}
-                  songs={songs}
-                  filteredSongs={filteredSongs}
-                  loadingSongs={loadingSongs}
-                  albums={albums}
-                  filteredAlbums={filteredAlbums}
-                  loadingAlbums={loadingAlbums}
-                  searchText={searchText}
-                  setSearchText={setSearchText}
-                  onSongSelect={handleSongSelect}
-                  barHeight={barHeight}
-                />
+              <View
+                style={[
+                  styles.mainRow,
+                  isMobile && { flexDirection: "column" },
+                ]}
+              >
+                <View style={isMobile ? { width: "100%" } : { flex: 1 }}>
+                  <HomeLeftColumn
+                    user={user}
+                    songs={visibleSongs}
+                    filteredSongs={filteredSongs}
+                    loadingSongs={loadingSongs}
+                    albums={albums}
+                    filteredAlbums={filteredAlbums}
+                    loadingAlbums={loadingAlbums}
+                    podcasts={podcasts}
+                    filteredPodcasts={filteredPodcasts}
+                    loadingPodcasts={loadingPodcasts}
+                    searchText={searchText}
+                    setSearchText={setSearchText}
+                    onSongSelect={handleSongSelect}
+                    barHeight={barHeight}
+                  />
+                </View>
               </View>
+            </ScrollView>
+          ) : (
+            <View style={styles.loaderContainer}>
+              <ActivityIndicator size="large" color="#1DB954" />
             </View>
-          </ScrollView>
+          )}
         </AppLayout>
       ) : (
         <ActivityIndicator size="large" color="#1DB954" style={styles.loader} />
@@ -149,6 +240,12 @@ const styles = StyleSheet.create({
   },
   loader: {
     marginVertical: 12,
+  },
+  loaderContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 40,
   },
   profileContainer: {
     flexDirection: "row",

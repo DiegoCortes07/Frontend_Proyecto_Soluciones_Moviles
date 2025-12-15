@@ -1,9 +1,10 @@
 import React from "react";
 import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native";
 import Album from "../../../interfaces/Album";
+import { useTheme } from "../../../contexts/ThemeContext";
 import Artist from "../../../interfaces/Artist";
+import { getSongImageUrl, logImageError } from "../../../utils/imageHelper";
 
-const defaultSongImage = "https://cdn-icons-png.flaticon.com/512/1384/1384060.png";
 const defaultAvatar =
   "https://media.istockphoto.com/id/1495088043/es/vector/icono-de-perfil-de-usuario-avatar-o-icono-de-persona-foto-de-perfil-símbolo-de-retrato.jpg?s=612x612&w=0&k=20&c=mY3gnj2lU7khgLhV6dQBNqomEGj3ayWH-xtpYuCXrzk=";
 
@@ -20,7 +21,9 @@ export const AlbumCard: React.FC<AlbumCardProps> = ({
   onAlbumPress,
   onArtistPress,
 }) => {
-  const getAlbumImage = () => album?.image || (album as any)?.imageUrl || defaultSongImage;
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
+  const getAlbumImage = () => getSongImageUrl(album?.image || (album as any)?.imageUrl);
   const getArtistImage = () => artist?.image || defaultAvatar;
 
   return (
@@ -30,6 +33,8 @@ export const AlbumCard: React.FC<AlbumCardProps> = ({
           source={{ uri: getAlbumImage() }}
           style={styles.albumImage}
           resizeMode="cover"
+          onError={() => logImageError("AlbumCard", getAlbumImage())}
+          progressiveRenderingEnabled={true}
         />
       </TouchableOpacity>
       <Text style={styles.albumTitle} numberOfLines={1}>
@@ -62,17 +67,17 @@ export const AlbumCard: React.FC<AlbumCardProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (theme: any) => StyleSheet.create({
   albumItem: {
     marginRight: 20,
     alignItems: "center",
     marginBottom: 10,
-    backgroundColor: "#0f1d38",
+    backgroundColor: theme.backgroundCard,
     borderRadius: 18,
     padding: 12,
     borderWidth: 1,
-    borderColor: "#1c2f55",
-    shadowColor: "#000",
+    borderColor: theme.border,
+    shadowColor: theme.shadow,
     shadowOpacity: 0.2,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 3 },
@@ -86,7 +91,7 @@ const styles = StyleSheet.create({
     borderColor: "#1DB954",
   },
   albumTitle: {
-    color: "#f7fbff",
+    color: theme.textPrimary,
     marginTop: 10,
     fontSize: 16,
     fontWeight: "800",
@@ -100,7 +105,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   albumMeta: {
-    color: "#9fb4d6",
+    color: theme.textTertiary,
     fontSize: 12,
     fontWeight: "600",
   },
@@ -111,10 +116,10 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     marginRight: 8,
     borderWidth: 1,
-    borderColor: "#1c2f55",
+    borderColor: theme.border,
   },
   artistLink: {
-    color: "#7fe9b5",
+    color: theme.textTertiary,
     fontSize: 14,
   },
 });

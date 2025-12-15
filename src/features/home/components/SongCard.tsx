@@ -2,8 +2,12 @@ import React from "react";
 import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import Song from "../../../interfaces/Song";
-
-const defaultSongImage = "https://cdn-icons-png.flaticon.com/512/1384/1384060.png";
+import { useTheme } from "../../../contexts/ThemeContext";
+import {
+  DEFAULT_SONG_IMAGE,
+  getSongImageUrl,
+  logImageError,
+} from "../../../utils/imageHelper";
 
 interface SongCardProps {
   song: Song;
@@ -22,16 +26,31 @@ export const SongCard: React.FC<SongCardProps> = ({
   onToggleFavorite,
   onAddToPlaylist,
 }) => {
-  const getSongImage = () => song?.imageUrl || (song as any)?.image || defaultSongImage;
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
+  const getSongImage = () =>
+    getSongImageUrl(song?.imageUrl || (song as any)?.image);
+  const [imageUri, setImageUri] = React.useState<string>(getSongImage());
+
+  React.useEffect(() => {
+    setImageUri(getSongImage());
+  }, [song?.id]);
 
   return (
     <View style={styles.songItem}>
-      <TouchableOpacity onPress={onPress}>
-        <Image
-          source={{ uri: getSongImage() }}
-          style={styles.songImage}
-          resizeMode="cover"
-        />
+      <TouchableOpacity onPress={onPress} style={styles.touchableArea}>
+        <View style={styles.imageWrapper}>
+          <Image
+            source={{ uri: imageUri }}
+            style={styles.songImage}
+            resizeMode="cover"
+            onError={() => {
+              logImageError("SongCard", imageUri);
+              setImageUri(DEFAULT_SONG_IMAGE);
+            }}
+            progressiveRenderingEnabled={true}
+          />
+        </View>
         <Text style={styles.songTitle} numberOfLines={1}>
           {song.title}
         </Text>
@@ -44,14 +63,20 @@ export const SongCard: React.FC<SongCardProps> = ({
         )}
       </TouchableOpacity>
       <View style={styles.songItemActions}>
-        <TouchableOpacity onPress={onToggleFavorite} style={styles.songActionButton}>
+        <TouchableOpacity
+          onPress={onToggleFavorite}
+          style={styles.songActionButton}
+        >
           <Icon
             name={isFavorited ? "heart" : "heart-o"}
             size={16}
             color={isFavorited ? "#ff4d4d" : "#9fb4d6"}
           />
         </TouchableOpacity>
-        <TouchableOpacity onPress={onAddToPlaylist} style={styles.songActionButton}>
+        <TouchableOpacity
+          onPress={onAddToPlaylist}
+          style={styles.songActionButton}
+        >
           <Icon name="plus" size={16} color="#9fb4d6" />
         </TouchableOpacity>
       </View>
@@ -59,39 +84,46 @@ export const SongCard: React.FC<SongCardProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (theme: any) => StyleSheet.create({
   songItem: {
     marginRight: 10,
-    backgroundColor: "#0f1d38",
+    backgroundColor: theme.backgroundCard,
     borderRadius: 14,
     width: 150,
     alignItems: "center",
     padding: 10,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: "#1c2f55",
-    shadowColor: "#000",
+    borderColor: theme.border,
+    shadowColor: theme.shadow,
     shadowOpacity: 0.2,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 3 },
     elevation: 5,
     overflow: "hidden",
   },
-  songImage: {
+  touchableArea: {
     width: "100%",
-    maxWidth: 130,
-    height: 110,
+    alignItems: "center",
+  },
+  imageWrapper: {
+    width: 130,
+    height: 130,
     borderRadius: 10,
     marginBottom: 8,
-    backgroundColor: "#1c2f55",
+    backgroundColor: theme.backgroundElevated,
+    overflow: "hidden",
+  },
+  songImage: {
+    width: "100%",
+    height: "100%",
   },
   songTitle: {
-    color: "#f7fbff",
-    fontSize: 16,
+    color: theme.textPrimary,
+    fontSize: 14,
     fontWeight: "800",
     textAlign: "center",
     width: "100%",
-    maxWidth: 130,
     paddingHorizontal: 4,
   },
   songItemActions: {
@@ -104,12 +136,11 @@ const styles = StyleSheet.create({
     padding: 6,
   },
   artistLink: {
-    color: "#7fe9b5",
-    fontSize: 14,
+    color: theme.textTertiary,
+    fontSize: 12,
     marginTop: 6,
     textAlign: "center",
     width: "100%",
-    maxWidth: 130,
     paddingHorizontal: 4,
   },
 });

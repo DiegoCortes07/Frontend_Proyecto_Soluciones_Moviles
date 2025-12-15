@@ -11,8 +11,10 @@ import { ProfileHeader } from "./ProfileHeader";
 import { SearchBar } from "./SearchBar";
 import { SongsList } from "./SongsList";
 import { AlbumsList } from "./AlbumsList";
+import { PodcastsList } from "./PodcastsList";
 import { ArtistsList } from "./ArtistsList";
 import { ArtistDetailModal } from "./ArtistDetailModal";
+import { useTheme } from "../../../contexts/ThemeContext";
 
 const HomeLeftColumn: React.FC<Props> = ({
   user,
@@ -22,11 +24,15 @@ const HomeLeftColumn: React.FC<Props> = ({
   albums,
   filteredAlbums,
   loadingAlbums,
+  podcasts,
+  filteredPodcasts,
+  loadingPodcasts,
   searchText,
   setSearchText,
   onSongSelect,
   barHeight,
 }) => {
+  const { theme } = useTheme();
   const [expandedArtist, setExpandedArtist] = React.useState<string | null>(
     null
   );
@@ -104,7 +110,7 @@ const HomeLeftColumn: React.FC<Props> = ({
         styles.scrollContent,
         { flexGrow: 1, paddingBottom: barHeight + 16 },
       ]}
-      style={[styles.leftColumn, { flex: 1 }]}
+      style={[styles.leftColumn, { flex: 1, backgroundColor: theme.background }]}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator
       nestedScrollEnabled
@@ -129,6 +135,14 @@ const HomeLeftColumn: React.FC<Props> = ({
         loading={loadingAlbums}
         artistCache={artistCache}
         onAlbumPress={(id) => navigation.navigate("Album", { id })}
+        onArtistPress={showArtistModal}
+      />
+
+      <PodcastsList
+        podcasts={filteredPodcasts}
+        loading={loadingPodcasts}
+        artistCache={artistCache}
+        onPodcastPress={(id) => navigation.navigate("Album", { id })}
         onArtistPress={showArtistModal}
       />
 

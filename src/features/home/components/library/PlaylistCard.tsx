@@ -1,6 +1,8 @@
 import React from "react";
 import { Text, StyleSheet, Image, TouchableOpacity, View } from "react-native";
 import Playlist from "../../../../interfaces/Playlist";
+import { useTheme } from "../../../../contexts/ThemeContext";
+import { getPlaylistImageUrl, logImageError } from "../../../../utils/imageHelper";
 
 interface PlaylistCardProps {
   playlist: Playlist;
@@ -15,16 +17,19 @@ export const PlaylistCard: React.FC<PlaylistCardProps> = ({
   onPress,
   cantSongs,
 }) => {
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
+  
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.9}>
       <View style={styles.imageWrapper}>
         <Image
           source={{
-            uri:
-              coverImage ||
-              "https://cdn-icons-png.flaticon.com/512/11065/11065753.png",
+            uri: getPlaylistImageUrl(coverImage),
           }}
           style={styles.image}
+          onError={() => logImageError("PlaylistCard", coverImage)}
+          progressiveRenderingEnabled={true}
         />
         <View style={styles.songBadge}>
           <Text style={styles.songBadgeText}>
@@ -43,17 +48,17 @@ export const PlaylistCard: React.FC<PlaylistCardProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (theme: any) => StyleSheet.create({
   card: {
     width: 140,
     marginRight: 12,
     alignItems: "flex-start",
-    backgroundColor: "#0c1730",
+    backgroundColor: theme.backgroundCard,
     borderRadius: 16,
     padding: 10,
     borderWidth: 1,
-    borderColor: "#1a2f57",
-    shadowColor: "#000",
+    borderColor: theme.border,
+    shadowColor: theme.shadow,
     shadowOpacity: 0.22,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 5 },
@@ -65,7 +70,7 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     borderRadius: 12,
     overflow: "hidden",
-    backgroundColor: "#142443",
+    backgroundColor: theme.backgroundElevated,
   },
   image: {
     width: "100%",
@@ -86,7 +91,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   cardTitle: {
-    color: "#f7fbff",
+    color: theme.textPrimary,
     marginTop: 2,
     textAlign: "left",
     fontWeight: "800",
@@ -94,7 +99,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   cardDescription: {
-    color: "#9fb4d6",
+    color: theme.textTertiary,
     fontSize: 12,
     lineHeight: 16,
     textAlign: "left",

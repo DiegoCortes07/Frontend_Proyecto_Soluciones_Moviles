@@ -1,7 +1,16 @@
 import React from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity, Alert, Platform } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  Alert,
+  Platform,
+} from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import Song from "../../../../interfaces/Song";
+import { useTheme } from "../../../../contexts/ThemeContext";
 
 // Declarar window para TypeScript en web
 declare const window: any;
@@ -23,35 +32,42 @@ export const PlaylistSongRow: React.FC<PlaylistSongRowProps> = ({
   onAddToPlaylist,
   onRemoveFromPlaylist,
 }) => {
-  const defaultSongImage = "https://cdn-icons-png.flaticon.com/512/1384/1384060.png";
-  const getSongImage = (s: Song) => s?.imageUrl || (s as any)?.image || defaultSongImage;
+  const { theme } = useTheme();
+  const styles = React.useMemo(() => getStyles(theme), [theme]);
+
+  const defaultSongImage =
+    "https://cdn-icons-png.flaticon.com/512/1384/1384060.png";
+  const getSongImage = (s: Song) =>
+    s?.imageUrl || (s as any)?.image || defaultSongImage;
 
   const handleRemove = (e: any) => {
     e?.stopPropagation?.();
-    console.log('PlaylistSongRow: handleRemove called for song:', song.title);
-    
-    if (Platform.OS === 'web') {
- 
+    console.log("PlaylistSongRow: handleRemove called for song:", song.title);
+
+    if (Platform.OS === "web") {
       if (window.confirm(`¿Eliminar "${song.title}" de la playlist?`)) {
-        console.log('PlaylistSongRow: User confirmed delete, calling onRemoveFromPlaylist');
+        console.log(
+          "PlaylistSongRow: User confirmed delete, calling onRemoveFromPlaylist"
+        );
         onRemoveFromPlaylist();
       } else {
-        console.log('PlaylistSongRow: User cancelled delete');
+        console.log("PlaylistSongRow: User cancelled delete");
       }
     } else {
-      
       Alert.alert(
         "Eliminar canción",
         "¿Eliminar esta canción de la playlist?",
         [
           { text: "Cancelar", style: "cancel" },
-          { 
-            text: "Eliminar", 
-            style: "destructive", 
+          {
+            text: "Eliminar",
+            style: "destructive",
             onPress: () => {
-              console.log('PlaylistSongRow: Confirmed delete, calling onRemoveFromPlaylist');
+              console.log(
+                "PlaylistSongRow: Confirmed delete, calling onRemoveFromPlaylist"
+              );
               onRemoveFromPlaylist();
-            }
+            },
           },
         ]
       );
@@ -61,10 +77,10 @@ export const PlaylistSongRow: React.FC<PlaylistSongRowProps> = ({
   return (
     <View style={styles.songRow}>
       <TouchableOpacity style={styles.songRowMain} onPress={onPress}>
-        <Image 
-          source={{ uri: getSongImage(song) }} 
-          style={styles.songImage} 
-          resizeMode="cover" 
+        <Image
+          source={{ uri: getSongImage(song) }}
+          style={styles.songImage}
+          resizeMode="cover"
         />
         <View style={{ flex: 1 }}>
           <Text style={styles.songTitle} numberOfLines={1}>
@@ -89,7 +105,7 @@ export const PlaylistSongRow: React.FC<PlaylistSongRowProps> = ({
           <Icon
             name={isFavorited ? "heart" : "heart-o"}
             size={18}
-            color={isFavorited ? "#ff4d4d" : "#9fb4d6"}
+            color={isFavorited ? theme.liked : theme.textTertiary}
           />
         </TouchableOpacity>
         <TouchableOpacity
@@ -100,56 +116,57 @@ export const PlaylistSongRow: React.FC<PlaylistSongRowProps> = ({
           style={styles.actionButton}
           activeOpacity={0.7}
         >
-          <Icon name="plus" size={18} color="#9fb4d6" />
+          <Icon name="plus" size={18} color={theme.textTertiary} />
         </TouchableOpacity>
         <TouchableOpacity
           onPress={handleRemove}
           style={styles.actionButton}
           activeOpacity={0.7}
         >
-          <Icon name="trash" size={16} color="#ff6b6b" />
+          <Icon name="trash" size={16} color={theme.error} />
         </TouchableOpacity>
       </View>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  songRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#0f1d38",
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: "#20355e",
-  },
-  songRowMain: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  songRowActions: {
-    flexDirection: "row",
-    gap: 8,
-    marginLeft: 8,
-  },
-  songImage: {
-    width: 56,
-    height: 56,
-    borderRadius: 10,
-    marginRight: 12,
-  },
-  songTitle: {
-    color: "#f7fbff",
-    fontWeight: "700",
-    fontSize: 15,
-  },
-  songSubtitle: {
-    color: "#9fb4d6",
-    marginTop: 2,
-  },
-  actionButton: {
-    padding: 6,
-  },
-});
+const getStyles = (theme: any) =>
+  StyleSheet.create({
+    songRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: theme.backgroundSecondary,
+      borderRadius: 12,
+      padding: 12,
+      borderWidth: 1,
+      borderColor: theme.border,
+    },
+    songRowMain: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    songRowActions: {
+      flexDirection: "row",
+      gap: 8,
+      marginLeft: 8,
+    },
+    songImage: {
+      width: 56,
+      height: 56,
+      borderRadius: 10,
+      marginRight: 12,
+    },
+    songTitle: {
+      color: theme.textPrimary,
+      fontWeight: "700",
+      fontSize: 15,
+    },
+    songSubtitle: {
+      color: theme.textTertiary,
+      marginTop: 2,
+    },
+    actionButton: {
+      padding: 6,
+    },
+  });

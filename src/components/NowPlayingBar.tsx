@@ -11,8 +11,10 @@ import {
   PanResponder,
   ScrollView,
   Platform,
+  ViewStyle,
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
+import { useTheme } from "../contexts/ThemeContext";
 import Slider from "@react-native-community/slider";
 import Song from "../interfaces/Song";
 
@@ -29,6 +31,7 @@ interface Props {
   onToggleFavorite?: (song: Song) => void;
   onAddToPlaylist?: (song: Song) => void;
   isFavorited?: boolean;
+  style?: ViewStyle;
 }
 
 const NowPlayingBar: React.FC<Props> = ({
@@ -44,9 +47,12 @@ const NowPlayingBar: React.FC<Props> = ({
   onToggleFavorite,
   onAddToPlaylist,
   isFavorited,
+  style,
 }) => {
   const { width: screenW } = Dimensions.get("window");
   const isMobile = screenW < 640;
+  const { theme, isDark } = useTheme();
+  const styles = getStyles(theme);
   const [expanded, setExpanded] = useState(false);
   const [localFavorited, setLocalFavorited] = useState<boolean>(!!isFavorited);
 
@@ -133,7 +139,7 @@ const NowPlayingBar: React.FC<Props> = ({
         <View style={styles.modalContainer}>
           <View style={styles.modalTopBar}>
             <TouchableOpacity style={styles.topIconButton} onPress={closeModal}>
-              <Icon name="chevron-down" size={22} color="#eaf6ff" />
+              <Icon name="chevron-down" size={22} color={theme.textPrimary} />
             </TouchableOpacity>
             <View style={styles.modalTopCenter}>
               <Text style={styles.topLabel}>Reproduciendo</Text>
@@ -186,7 +192,7 @@ const NowPlayingBar: React.FC<Props> = ({
                     style={styles.inlineIconButton}
                     accessibilityLabel="favorite-expanded"
                   >
-                    <Icon name={localFavorited ? "heart" : "heart-o"} size={24} color={localFavorited ? "#1DB954" : "#eaf6ff"} />
+                    <Icon name={localFavorited ? "heart" : "heart-o"} size={24} color={localFavorited ? theme.success : theme.textPrimary} />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -208,35 +214,24 @@ const NowPlayingBar: React.FC<Props> = ({
 
               <View style={styles.modalControlsLarge}>
                 <TouchableOpacity onPress={onPrev}>
-                  <Icon name="backward" size={34} color="#eaf6ff" />
+                  <Icon name="backward" size={34} color={theme.textPrimary} />
                 </TouchableOpacity>
 
                 <TouchableOpacity onPress={onPlayPause} style={[styles.playButtonLarge, isPlaying ? styles.pause : styles.play]}>
-                  <Icon name={isPlaying ? "pause" : "play"} size={32} color="#071428" />
+                  <Icon name={isPlaying ? "pause" : "play"} size={32} color={theme ? "#071428" : "#ffffff"} />
                 </TouchableOpacity>
 
                 <TouchableOpacity onPress={onNext}>
-                  <Icon name="forward" size={34} color="#eaf6ff" />
+                  <Icon name="forward" size={34} color={theme.textPrimary} />
                 </TouchableOpacity>
               </View>
 
               <View style={styles.modalActionRow}>
                 <TouchableOpacity
-                  onPress={() => {
-                    if (!song) return;
-                    const nextVal = !localFavorited;
-                    setLocalFavorited(nextVal);
-                    onToggleFavorite && onToggleFavorite(song);
-                  }}
-                  style={styles.modalIconButton}
-                >
-                  <Icon name={localFavorited ? "heart" : "heart-o"} size={22} color={localFavorited ? "#ff6b81" : "#eaf6ff"} />
-                </TouchableOpacity>
-                <TouchableOpacity
                   onPress={() => { if (song) onAddToPlaylist && onAddToPlaylist(song); }}
                   style={styles.modalIconButton}
                 >
-                  <Icon name="plus" size={20} color="#eaf6ff" />
+                  <Icon name="plus" size={20} color={theme.textPrimary} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -255,6 +250,7 @@ const NowPlayingBar: React.FC<Props> = ({
         styles.container,
         isMobile && styles.containerMobile,
         { opacity: barOpacity, transform: [{ translateY: barTranslateY }] },
+        style,
       ]}
       onLayout={(e) => {
         const h = e.nativeEvent.layout.height;
@@ -295,14 +291,14 @@ const NowPlayingBar: React.FC<Props> = ({
                 accessibilityLabel="favorite"
                 style={styles.iconButton}
               >
-                <Icon name={localFavorited ? "heart" : "heart-o"} size={18} color={localFavorited ? "#ff6b81" : "#eaf6ff"} />
+                <Icon name={localFavorited ? "heart" : "heart-o"} size={18} color={localFavorited ? theme.liked : theme.textPrimary} />
               </TouchableOpacity>
             </View>
           </View>
 
           <View style={styles.mobileControls}>
             <TouchableOpacity onPress={(e) => { e.stopPropagation(); onPrev(); }} accessibilityLabel="previous">
-              <Icon name="backward" size={24} color="#eaf6ff" />
+              <Icon name="backward" size={24} color={theme.textPrimary} />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -310,11 +306,11 @@ const NowPlayingBar: React.FC<Props> = ({
               style={[styles.playButton, isPlaying ? styles.pause : styles.play]}
               accessibilityLabel="play-pause"
             >
-              <Icon name={isPlaying ? "pause" : "play"} size={22} color="#071428" />
+              <Icon name={isPlaying ? "pause" : "play"} size={22} color={isDark ? "#071428" : "#ffffff"} />
             </TouchableOpacity>
 
             <TouchableOpacity onPress={(e) => { e.stopPropagation(); onNext(); }} accessibilityLabel="next">
-              <Icon name="forward" size={24} color="#eaf6ff" />
+              <Icon name="forward" size={24} color={theme.textPrimary} />
             </TouchableOpacity>
           </View>
 
@@ -349,7 +345,7 @@ const NowPlayingBar: React.FC<Props> = ({
           <View style={styles.center}>
             <View style={styles.controls}>
               <TouchableOpacity onPress={(e) => { e.stopPropagation(); onPrev(); }} accessibilityLabel="previous">
-                <Icon name="backward" size={20} color="#eaf6ff" />
+                <Icon name="backward" size={20} color={theme.textPrimary} />
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -357,11 +353,11 @@ const NowPlayingBar: React.FC<Props> = ({
                 style={[styles.playButton, isPlaying ? styles.pause : styles.play]}
                 accessibilityLabel="play-pause"
               >
-                <Icon name={isPlaying ? "pause" : "play"} size={18} color="#071428" />
+                <Icon name={isPlaying ? "pause" : "play"} size={18} color={isDark ? "#071428" : "#ffffff"} />
               </TouchableOpacity>
 
               <TouchableOpacity onPress={(e) => { e.stopPropagation(); onNext(); }} accessibilityLabel="next">
-                <Icon name="forward" size={20} color="#eaf6ff" />
+                <Icon name="forward" size={20} color={theme.textPrimary} />
               </TouchableOpacity>
             </View>
 
@@ -385,7 +381,7 @@ const NowPlayingBar: React.FC<Props> = ({
                 accessibilityLabel="favorite"
                 style={styles.iconButton}
               >
-                <Icon name={localFavorited ? "heart" : "heart-o"} size={18} color={localFavorited ? "#ff6b81" : "#eaf6ff"} />
+                <Icon name={localFavorited ? "heart" : "heart-o"} size={18} color={localFavorited ? theme.liked : theme.textPrimary} />
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -397,7 +393,7 @@ const NowPlayingBar: React.FC<Props> = ({
                 accessibilityLabel="add-to-playlist"
                 style={styles.iconButton}
               >
-                <Icon name="plus" size={16} color="#eaf6ff" />
+                <Icon name="plus" size={16} color={theme.textPrimary} />
               </TouchableOpacity>
             </View>
           </View>
@@ -416,22 +412,22 @@ const formatTime = (seconds: number) => {
   return `${m}:${s < 10 ? "0" : ""}${s}`;
 };
 
-const styles = StyleSheet.create({
+const getStyles = (theme: any) => StyleSheet.create({
   container: {
     position: "absolute",
     left: 0,
     right: 0,
     bottom: Platform.OS === "ios" ? 20 : 10,
     height: 90,
-    backgroundColor: "#071428",
-    borderTopColor: "#133b63",
+    backgroundColor: theme.backgroundSecondary,
+    borderTopColor: theme.border,
     borderTopWidth: 1,
     borderRadius: 16,
     marginHorizontal: 8,
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 14,
-    shadowColor: "#000",
+    shadowColor: theme.shadow,
     shadowOffset: { width: 0, height: -6 },
     shadowOpacity: 0.25,
     shadowRadius: 12,
@@ -466,13 +462,13 @@ const styles = StyleSheet.create({
     width: 58,
     height: 58,
     borderRadius: 8,
-    backgroundColor: "#0e3a57",
+    backgroundColor: theme.backgroundElevated,
   },
   coverPlaceholder: {
     width: 65,
     height: 65,
     borderRadius: 8,
-    backgroundColor: "#0e3a57",
+    backgroundColor: theme.backgroundElevated,
   },
   meta: {
     marginLeft: 8,
@@ -483,12 +479,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    color: "#eaf6ff",
+    color: theme.textPrimary,
     fontWeight: "700",
     fontSize: 15,
   },
   artist: {
-    color: "#9fd6ff",
+    color: theme.textTertiary,
     fontSize: 13,
   },
   mobileTopRow: {
@@ -519,17 +515,17 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
+    shadowColor: theme.shadow,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 6,
   },
   play: {
-    backgroundColor: "#1DB9FF",
+    backgroundColor: theme.primary,
   },
   pause: {
-    backgroundColor: "#ff6b6b",
+    backgroundColor: theme.error,
   },
   timeRow: {
     flexDirection: "row",
@@ -546,12 +542,12 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   timeText: {
-    color: "#9fd6ff",
+    color: theme.textTertiary,
     fontSize: 13,
     fontWeight: "600",
   },
   timeSeparator: {
-    color: "#9fd6ff",
+    color: theme.textTertiary,
     fontSize: 13,
     fontWeight: "400",
   },
@@ -578,7 +574,7 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: "#071428",
+    backgroundColor: theme.background,
   },
   modalTopBar: {
     flexDirection: 'row',
@@ -591,7 +587,7 @@ const styles = StyleSheet.create({
   topIconButton: {
     padding: 8,
     borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.06)'
+    backgroundColor: theme ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'
   },
   modalTopCenter: {
     alignItems: 'center',
@@ -599,12 +595,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   topLabel: {
-    color: '#9fd6ff',
+    color: theme.textTertiary,
     fontSize: 12,
     letterSpacing: 0.4,
   },
   topSubLabel: {
-    color: '#eaf6ff',
+    color: theme.textPrimary,
     fontSize: 14,
     fontWeight: '700',
   },
@@ -646,11 +642,11 @@ const styles = StyleSheet.create({
   inlineIconButton: {
     padding: 8,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: theme ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
   },
   coverFrame: {
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: theme ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
     borderRadius: 16,
     padding: 8,
   },
@@ -672,16 +668,16 @@ const styles = StyleSheet.create({
   },
   modalCoverPlaceholder: {
     borderRadius: 12,
-    backgroundColor: "#0e3a57",
+    backgroundColor: theme.backgroundElevated,
   },
   modalTitle: {
-    color: "#eaf6ff",
+    color: theme.textPrimary,
     fontSize: 24,
     fontWeight: "800",
     textAlign: "left",
   },
   modalArtist: {
-    color: "#9fd6ff",
+    color: theme.textTertiary,
     fontSize: 16,
     textAlign: "left",
   },
@@ -698,7 +694,7 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
+    shadowColor: theme.shadow,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.25,
     shadowRadius: 10,
@@ -714,7 +710,7 @@ const styles = StyleSheet.create({
   modalIconButton: {
     padding: 10,
     borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.02)'
+    backgroundColor: theme ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.04)'
   },
   modalSliderWrap: {
     flexDirection: "row",

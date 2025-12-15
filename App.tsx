@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar, Platform } from "react-native";
 import RootNavigator from "./src/app/navigation/RootNavigator";
+import { ThemeProvider } from "./src/contexts/ThemeContext";
+import { AuthProvider } from "./src/contexts/AuthContext";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,14 +21,18 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
-        <StatusBar 
-          barStyle="light-content" 
-          backgroundColor="transparent" 
-          translucent={Platform.OS === "android"}
-        />
-        <NavigationContainer>
-          <RootNavigator />
-        </NavigationContainer>
+        <AuthProvider>
+          <ThemeProvider>
+            <StatusBar 
+              barStyle="light-content" 
+              backgroundColor="transparent" 
+              translucent={Platform.OS === "android"}
+            />
+            <NavigationContainer>
+              <RootNavigator />
+            </NavigationContainer>
+          </ThemeProvider>
+        </AuthProvider>
       </QueryClientProvider>
     </SafeAreaProvider>
   );

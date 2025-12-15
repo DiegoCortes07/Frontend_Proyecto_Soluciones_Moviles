@@ -9,6 +9,7 @@ type AuthContextValue = {
   loading: boolean;
   logout: () => void;
   refreshUser: () => Promise<void>;
+  updateUser: (updatedUser: User) => void;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -51,8 +52,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshUser = async () => loadUser(token);
 
+  const updateUser = (updatedUser: User) => {
+    setUser(updatedUser);
+  };
+
   return (
-    <AuthContext.Provider value={{ token, setToken, user, loading, logout, refreshUser }}>
+    <AuthContext.Provider value={{ token, setToken, user, loading, logout, refreshUser, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

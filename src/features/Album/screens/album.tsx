@@ -11,7 +11,9 @@ import {
 } from "react-native";
 import Album from "../../../interfaces/Album";
 import Song from "../../../interfaces/Song";
+import Podcast from "../../../interfaces/Podcast";
 import { fetchSongsByAlbum, fetchAlbumDetails} from "../../../../api/album";
+import { getAllPodcasts, getShowsForPodcastId } from "../../../../api/podcast";
 import { useRoute, RouteProp } from "@react-navigation/native";
 import { usePlayer } from "../../../contexts/PlayerContext";
 import { useNavigation } from "@react-navigation/native";
@@ -19,10 +21,18 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../../app/navigation/RootNavigator";
 import AppLayout from "../../../components/layout/AppLayout";
 import { useAuth } from "../../../contexts/AuthContext";
+import { useTheme } from "../../../contexts/ThemeContext";
 import Icon from 'react-native-vector-icons/FontAwesome';
 
 type Props = {
   albumId?: number | string;
+};
+
+const formatDuration = (seconds?: number): string => {
+  if (!seconds) return "0:00";
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
 export default function AlbumScreen({ albumId }: Props) {
@@ -30,14 +40,17 @@ export default function AlbumScreen({ albumId }: Props) {
   const paramId = route?.params?.id;
   const id = albumId ?? paramId;
 
-  const [album, setAlbum] = useState<Album | null>(null);
+  const [album, setAlbum] = useState<Album | Podcast | null>(null);
   const [tracks, setTracks] = useState<Song[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [isPodcast, setIsPodcast] = useState<boolean>(false);
 
   const player = usePlayer();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { user, loading: authLoading } = useAuth();
+  const { theme } = useTheme();
+  const styles = React.useMemo(() => getStyles(theme), [theme]);
 
   useEffect(() => {
     if (!id) {
@@ -50,10 +63,28 @@ export default function AlbumScreen({ albumId }: Props) {
       setLoading(true);
       setError(null);
       try {
-        const albumRes = await fetchAlbumDetails(id);
-        const res = await fetchSongsByAlbum(id);
+        // Intentar primero como álbum
+        let albumRes = await fetchAlbumDetails(id).catch(() => null);
+        let res = await fetchSongsByAlbum(id).catch(() => null);
+        
+        // Si no es un álbum, intentar como podcast
+        if (!albumRes || !res || res.length === 0) {
+          const podcasts = await getAllPodcasts();
+          const podcastList = Array.isArray(podcasts) ? podcasts : (podcasts as any)?.podcasts || [];
+          const podcast = podcastList.find((p: any) => p.id === Number(id));
+          
+          if (podcast) {
+            setIsPodcast(true);
+            const episodes = await getShowsForPodcastId(id);
+            const episodeList = Array.isArray(episodes) ? episodes : (episodes as any)?.episodes || [];
+            setAlbum(podcast);
+            setTracks(episodeList);
+            return;
+          }
+        }
 
         if (albumRes) {
+          setIsPodcast(false);
           setAlbum(albumRes);
           setTracks(res || []);
         } else {
@@ -61,8 +92,8 @@ export default function AlbumScreen({ albumId }: Props) {
           setAlbum(albumRes);
         }
       } catch (e: any) {
-        console.error("Error fetching album:", e);
-        setError(e?.message || "Error al cargar el álbum");
+        console.error("Error fetching album/podcast:", e);
+        setError(e?.message || "Error al cargar el contenido");
       } finally {
         setLoading(false);
       }
@@ -71,7 +102,7 @@ export default function AlbumScreen({ albumId }: Props) {
     fetchAlbum();
   }, [id]);
 
-  if (loading) return <ActivityIndicator style={styles.center} size="large" color="#1DB954" />;
+  if (loading) return <ActivityIndicator style={styles.center} size="large" color={theme.success} />;
   if (error)
     return (
       <View style={styles.container}>
@@ -102,15 +133,15 @@ export default function AlbumScreen({ albumId }: Props) {
         style={styles.backButton}
         accessibilityLabel="volver-album"
       >
-        <Icon name="chevron-left" size={18} color="#071428" />
+        <Icon name="chevron-left" size={18} color={theme.background} />
       </TouchableOpacity>
       <Image source={{ uri: album.image }} style={styles.cover} />
       <View style={styles.meta}>
         <Text style={styles.title}>{album.title}</Text>
         <Text style={styles.artist}>{album.artistName}</Text>
-        <Text style={styles.artist}>{tracks.length} canciones</Text>
-        <Text style={styles.artist}>{album.year}</Text>
-        <Text style={styles.artist}>{album.genre}</Text>
+        <Text style={styles.artist}>{tracks.length} {isPodcast ? 'shows' : 'canciones'}</Text>
+        {album.year && <Text style={styles.artist}>{album.year}</Text>}
+        {album.genre && <Text style={styles.artist}>{album.genre}</Text>}
       </View>
     </View>
   );
@@ -118,7 +149,7 @@ export default function AlbumScreen({ albumId }: Props) {
   const content = (
     <>
       {header}
-      <Text style={styles.section}>Canciones</Text>
+      <Text style={styles.section}>{isPodcast ? 'Shows' : 'Canciones'}</Text>
       <FlatList
         data={tracks}
         keyExtractor={(t) => t.id.toString()}
@@ -134,9 +165,17 @@ export default function AlbumScreen({ albumId }: Props) {
                 <Image source={{ uri: item.imageUrl }} style={styles.trackImage} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.trackTitle} numberOfLines={1}>{item.title}</Text>
-                  <Text style={styles.trackArtist} numberOfLines={1}>{item.artistName}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Text style={styles.trackArtist} numberOfLines={1}>{item.artistName}</Text>
+                    {isPodcast && item.duration && (
+                      <>
+                        <Text style={styles.trackArtist}>•</Text>
+                        <Text style={styles.trackDuration}>{formatDuration(item.duration)}</Text>
+                      </>
+                    )}
+                  </View>
                 </View>
-                {active && <Icon name="play-circle" size={22} color="#1DB954" />}
+                {active && <Icon name="play-circle" size={22} color={theme.success} />}
               </TouchableOpacity>
               <View style={styles.trackActions}>
                 <TouchableOpacity
@@ -146,14 +185,14 @@ export default function AlbumScreen({ albumId }: Props) {
                   <Icon
                     name={player.isFavorited(item.id) ? "heart" : "heart-o"}
                     size={16}
-                    color={player.isFavorited(item.id) ? "#ff4d4d" : "#9fb4d6"}
+                    color={player.isFavorited(item.id) ? theme.liked : theme.textTertiary}
                   />
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => player.addToPlaylist(item)}
                   style={styles.actionBtn}
                 >
-                  <Icon name="plus" size={16} color="#9fb4d6" />
+                  <Icon name="plus" size={16} color={theme.textTertiary} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -175,16 +214,16 @@ export default function AlbumScreen({ albumId }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#050d1a" },
+const getStyles = (theme: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.background },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
   header: {
-    backgroundColor: "#0f1d38",
+    backgroundColor: theme.backgroundSecondary,
     padding: 20,
     alignItems: "flex-start",
     borderBottomWidth: 1,
-    borderBottomColor: "#1c2f55",
-    shadowColor: "#000",
+    borderBottomColor: theme.border,
+    shadowColor: theme.shadow,
     shadowOpacity: 0.15,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
@@ -194,11 +233,11 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#1DB954",
+    backgroundColor: theme.success,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 16,
-    shadowColor: "#1DB954",
+    shadowColor: theme.success,
     shadowOpacity: 0.3,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 3 },
@@ -210,8 +249,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     marginBottom: 16,
     borderWidth: 2,
-    borderColor: "#1DB954",
-    shadowColor: "#000",
+    borderColor: theme.success,
+    shadowColor: theme.shadow,
     shadowOpacity: 0.3,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 5 },
@@ -219,20 +258,20 @@ const styles = StyleSheet.create({
   },
   meta: { width: "100%" },
   title: {
-    color: "#f4f8ff",
+    color: theme.textPrimary,
     fontSize: 24,
     fontWeight: "800",
     marginBottom: 8,
     lineHeight: 30,
   },
   artist: {
-    color: "#9fb4d6",
+    color: theme.textTertiary,
     fontSize: 14,
     fontWeight: "600",
     marginBottom: 4,
   },
   section: {
-    color: "#f4f8ff",
+    color: theme.textPrimary,
     fontSize: 20,
     fontWeight: "800",
     marginHorizontal: 16,
@@ -242,22 +281,22 @@ const styles = StyleSheet.create({
   trackRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#0c1730",
+    backgroundColor: theme.backgroundCard,
     borderRadius: 14,
     padding: 12,
     marginHorizontal: 16,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: "#15284a",
-    shadowColor: "#000",
+    borderColor: theme.border,
+    shadowColor: theme.shadow,
     shadowOpacity: 0.1,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
     elevation: 3,
   },
   trackRowActive: {
-    backgroundColor: "#0f2541",
-    borderColor: "#1DB954",
+    backgroundColor: theme.backgroundElevated,
+    borderColor: theme.success,
     borderWidth: 1.5,
   },
   trackContent: {
@@ -267,7 +306,7 @@ const styles = StyleSheet.create({
   },
   trackIndex: {
     width: 28,
-    color: "#7fe9b5",
+    color: theme.primaryLight,
     fontSize: 14,
     fontWeight: "700",
     textAlign: "center",
@@ -279,16 +318,22 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginRight: 12,
     borderWidth: 1,
-    borderColor: "#20355e",
+    borderColor: theme.borderLight,
   },
   trackTitle: {
-    color: "#f7fbff",
+    color: theme.textPrimary,
     fontSize: 16,
     fontWeight: "700",
   },
   trackArtist: {
-    color: "#9fb4d6",
+    color: theme.textTertiary,
     fontSize: 13,
+    marginTop: 2,
+  },
+  trackDuration: {
+    color: theme.primary,
+    fontSize: 13,
+    fontWeight: "600",
     marginTop: 2,
   },
   trackActions: {
@@ -299,6 +344,6 @@ const styles = StyleSheet.create({
   actionBtn: {
     padding: 6,
   },
-  errorText: { color: "#ff6b6b", padding: 16, fontSize: 16 },
+  errorText: { color: theme.error, padding: 16, fontSize: 16 },
   dataAlbum: { marginTop: 12, paddingHorizontal: 16 },
 });

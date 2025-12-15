@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, FlatList, StyleSheet } from "react-native";
 import Artist from "../../../interfaces/Artist";
 import { ArtistCard } from "./ArtistCard";
+import { useTheme } from "../../../contexts/ThemeContext";
 
 interface ArtistsListProps {
   artists: { id?: number; name: string }[];
@@ -18,6 +19,8 @@ export const ArtistsList: React.FC<ArtistsListProps> = ({
   onArtistPress,
   onArtistLongPress,
 }) => {
+  const { theme } = useTheme();
+  const styles = React.useMemo(() => getStyles(theme), [theme]);
   const q = (searchText || "").toLowerCase().trim();
   const filtered = q
     ? artists.filter((a) => a.name.toLowerCase().includes(q))
@@ -39,7 +42,9 @@ export const ArtistsList: React.FC<ArtistsListProps> = ({
                 artistName={item.name}
                 onPress={() => onArtistPress(item.id)}
                 onLongPress={
-                  onArtistLongPress ? () => onArtistLongPress(item.name) : undefined
+                  onArtistLongPress
+                    ? () => onArtistLongPress(item.name)
+                    : undefined
                 }
               />
             );
@@ -51,15 +56,16 @@ export const ArtistsList: React.FC<ArtistsListProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  sectionTitle: {
-    color: "#f4f8ff",
-    fontSize: 26,
-    fontWeight: "800",
-    marginVertical: 12,
-  },
-  flatListContainer: {
-    overflow: "hidden",
-    marginBottom: 16,
-  },
-});
+const getStyles = (theme: any) =>
+  StyleSheet.create({
+    sectionTitle: {
+      color: theme.textPrimary,
+      fontSize: 26,
+      fontWeight: "800",
+      marginVertical: 12,
+    },
+    flatListContainer: {
+      overflow: "hidden",
+      marginBottom: 16,
+    },
+  });

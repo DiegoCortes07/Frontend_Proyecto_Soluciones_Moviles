@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import Song from "../../../../interfaces/Song";
+import { getSongImageUrl, logImageError } from "../../../../utils/imageHelper";
 
 interface LikedSongCardProps {
   song: Song;
@@ -18,8 +19,7 @@ export const LikedSongCard: React.FC<LikedSongCardProps> = ({
   onToggleFavorite,
   onAddToPlaylist,
 }) => {
-  const defaultSongImage = "https://cdn-icons-png.flaticon.com/512/1384/1384060.png";
-  const getSongImage = (s: Song) => s?.imageUrl || (s as any)?.image || defaultSongImage;
+  const getSongImage = (s: Song) => getSongImageUrl(s?.imageUrl || (s as any)?.image);
   const artist = song.artistName?.trim() || "Artista desconocido";
 
   return (
@@ -28,7 +28,9 @@ export const LikedSongCard: React.FC<LikedSongCardProps> = ({
         <Image 
           source={{ uri: getSongImage(song) }} 
           style={styles.image} 
-          resizeMode="cover" 
+          resizeMode="cover"
+          onError={() => logImageError("LikedSongCard", getSongImage(song))}
+          progressiveRenderingEnabled={true}
         />
         <View style={styles.badge}>
           <Icon
