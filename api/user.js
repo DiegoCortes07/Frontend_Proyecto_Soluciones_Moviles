@@ -65,6 +65,7 @@ export const changeUserImage = async (token, newImage) => {
     try {
         const response = await api.put(`/users/change-image`, newImage, {
             headers: {
+                "Content-Type": "multipart/form-data",
                 Authorization: `Bearer ${token}`,
             },
         });

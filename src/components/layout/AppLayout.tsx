@@ -113,7 +113,6 @@ const AppLayout: React.FC<{
             <Text style={styles.navText}>Tu biblioteca</Text>
           </TouchableOpacity>
 
-          <View  style={{ width: "100%", flex: isMobileView ? 1 : 0 }}>
           <TouchableOpacity
             style={[styles.navItem, currentRouteName === "Plan" ? styles.navActive : undefined]}
             onPress={() => navigation.navigate("Plan" as never)}
@@ -154,17 +153,7 @@ const AppLayout: React.FC<{
                     navigation.navigate("Settings" as never);
                   }}
                 >
-                  <Text style={styles.menuText}>Preferencias</Text>
-                </TouchableOpacity>
-                {/*Ver Ajustes */}
-                <TouchableOpacity
-                  style={styles.menuItem}
-                  onPress={() => {
-                    setProfileMenuOpen(false);
-                    navigation.navigate("ChangePassword" as never);
-                  }}
-                >
-                  <Text style={styles.menuText}>Ajustes</Text>
+                  <Text style={styles.menuText}>Ver Ajustes</Text>
                 </TouchableOpacity>
                 {/*Cerrar sesión */}
                 <TouchableOpacity
@@ -179,7 +168,6 @@ const AppLayout: React.FC<{
               </View>
 
             </Popup>
-          </View>
         </View>
 
         <View style={{ flex: 1 }} />
