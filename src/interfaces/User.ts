@@ -1,12 +1,12 @@
 export default interface User {
+    alias: string;
     id: number;
-    username : string,
-    alias: string,
-    email : string,
-    plan : string,
-    profilePhoto : string,
-    lenguage : string
-    theme : string
-    explicitContent : boolean
-    token : string
+    username : string;
+    email : string;
+    plan : string;
+    urlProfilePhoto : string;
+    language : string;
+    theme : string;
+    explicitContent : boolean;
+    token : string;
 }

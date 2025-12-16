@@ -1,6 +1,7 @@
 import React from "react";
 import { View, TextInput, StyleSheet } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
+import { useTheme } from "../../../contexts/ThemeContext";
 
 interface SearchBarProps {
   value: string;
@@ -8,13 +9,15 @@ interface SearchBarProps {
 }
 
 export const SearchBar: React.FC<SearchBarProps> = ({ value, onChangeText }) => {
+  const { theme, isDark } = useTheme();
+  const styles = getStyles(theme, isDark);
   return (
     <View style={styles.searchContainer}>
-      <Icon name="search" size={20} color="#bbb" style={styles.searchIcon} />
+      <Icon name="search" size={20} color={theme.textTertiary} style={styles.searchIcon} />
       <TextInput
         style={styles.searchInput}
         placeholder="Buscar canciones, álbumes o artistas..."
-        placeholderTextColor="#bbb"
+        placeholderTextColor={theme.textTertiary}
         value={value}
         onChangeText={onChangeText}
       />
@@ -22,18 +25,23 @@ export const SearchBar: React.FC<SearchBarProps> = ({ value, onChangeText }) => 
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (theme: any, isDark: boolean) => StyleSheet.create({
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#0c1730",
+    backgroundColor: isDark ? theme.backgroundSecondary : theme.backgroundCard,
     borderRadius: 18,
     paddingHorizontal: 16,
     paddingVertical: 12,
     marginBottom: 18,
     borderWidth: 1,
-    borderColor: "#1c2f55",
+    borderColor: theme.border,
+    shadowColor: theme.shadow,
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   searchIcon: { marginRight: 10 },
-  searchInput: { flex: 1, color: "#e8f1ff", fontSize: 16 },
+  searchInput: { flex: 1, color: theme.textPrimary, fontSize: 16 },
 });

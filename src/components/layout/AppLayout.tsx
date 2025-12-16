@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions, Platform, Alert } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useNavigation, useNavigationState } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -9,6 +9,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import NowPlayingBar from "../NowPlayingBar";
 import { usePlayer } from "../../contexts/PlayerContext";
 import { Popup } from "../../features/account/components/popup";
+import { useTheme } from "../../contexts/ThemeContext";
 
 // Declarar window para TypeScript en web
 declare const window: any;
@@ -26,6 +27,9 @@ const AppLayout: React.FC<{
   const buttonRef = useRef<View>(null);
   const [modalPos, setModalPos] = useState({x:0,y:0});
   const auth = useAuth();
+  const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
 
   const currentRouteName = useNavigationState((state) => {
     if (!state) return "";
@@ -80,7 +84,7 @@ const AppLayout: React.FC<{
   const player = usePlayer();
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
       <View style={styles.wrapper}>
       <View style={styles.sidebar}>
         <TouchableOpacity style={styles.logoWrap}>
@@ -110,6 +114,15 @@ const AppLayout: React.FC<{
           </TouchableOpacity>
 
           <View  style={{ width: "100%", flex: isMobileView ? 1 : 0 }}>
+          <TouchableOpacity
+            style={[styles.navItem, currentRouteName === "Plan" ? styles.navActive : undefined]}
+            onPress={() => navigation.navigate("Plan" as never)}
+          >
+            <Icon name="star" size={18} color="#1DB954" />
+            <Text style={styles.navText}>Plan</Text>
+          </TouchableOpacity>
+
+          <View style={{ width: "100%", flex: isMobileView ? 1 : 0 }}>
             <TouchableOpacity
               ref={buttonRef}
               style={[styles.navItem]}
@@ -128,10 +141,20 @@ const AppLayout: React.FC<{
                   style={styles.menuItem}
                   onPress={() => {
                     setProfileMenuOpen(false);
-                    navigation.navigate("ProfileSettings" as never);
+                    navigation.navigate("Profile" as never);
                   }}
                 >
                   <Text style={styles.menuText}>Ver perfil</Text>
+                </TouchableOpacity>
+                {/*Ver preferencias */}
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => {
+                    setProfileMenuOpen(false);
+                    navigation.navigate("Settings" as never);
+                  }}
+                >
+                  <Text style={styles.menuText}>Preferencias</Text>
                 </TouchableOpacity>
                 {/*Ver Ajustes */}
                 <TouchableOpacity
@@ -161,6 +184,7 @@ const AppLayout: React.FC<{
 
         <View style={{ flex: 1 }} />
       </View>
+      </View>
 
       <View style={[styles.content, { paddingBottom: isMobileView ? 150 : 115 }]}>{children}</View>
 
@@ -176,6 +200,7 @@ const AppLayout: React.FC<{
         onToggleFavorite={player.toggleFavorite}
         onAddToPlaylist={player.addToPlaylist}
         isFavorited={player.song ? player.isFavorited(player.song.id) : false}
+        style={{ marginBottom: insets.bottom }}
       />
     </View>
     </SafeAreaView>
@@ -185,28 +210,28 @@ const AppLayout: React.FC<{
 const { width: screenWidth } = Dimensions.get("window");
 const isMobileView = screenWidth < 600;
 
-const styles = StyleSheet.create({
+const getStyles = (theme: any) => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#071428",
+    backgroundColor: theme.background,
   },
   wrapper: {
     flex: 1,
     flexDirection: isMobileView ? "column" : "row",
-    backgroundColor: "#071428",
+    backgroundColor: theme.background,
   },
   sidebar: {
     width: isMobileView ? "100%" : 220,
     paddingTop: isMobileView ? 12 : 28,
     paddingHorizontal: 12,
-    backgroundColor: "#071428",
+    backgroundColor: theme.background,
     borderRightWidth: isMobileView ? 0 : 1,
     borderBottomWidth: isMobileView ? 1 : 0,
-    borderRightColor: "#133b63",
-    borderBottomColor: isMobileView ? "#133b63" : "transparent",
+    borderRightColor: theme.border,
+    borderBottomColor: isMobileView ? theme.border : "transparent",
     alignItems: isMobileView ? "stretch" : "flex-start",
     maxHeight: isMobileView ? "auto" : "100%",
-    shadowColor: "#000",
+    shadowColor: theme.shadow,
     shadowOffset: { width: isMobileView ? 0 : 4, height: isMobileView ? 2 : 0 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
@@ -230,7 +255,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   logoText: {
-    color: "#eaf6ff",
+    color: theme.textPrimary,
     fontWeight: "700",
     fontSize: 16,
   },
@@ -246,17 +271,17 @@ const styles = StyleSheet.create({
     marginBottom: isMobileView ? 0 : 6,
   },
   navActive: {
-    backgroundColor: "#0b3b5a",
+    backgroundColor: theme.backgroundElevated,
     borderRadius: 6,
     paddingLeft: 8,
-    shadowColor: "#000",
+    shadowColor: theme.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,
     shadowRadius: 10,
     elevation: 4,
   },
   navText: {
-    color: "#eaf6ff",
+    color: theme.textPrimary,
     marginLeft: 8,
     fontSize: 13,
   },
@@ -280,20 +305,20 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   userName: {
-    color: "#eaf6ff",
+    color: theme.textPrimary,
     fontSize: 14,
     maxWidth: 120,
   },
   userMenu: {
     marginTop: 8,
-    backgroundColor: "#061a2a",
+    backgroundColor: theme.backgroundSecondary,
     borderRadius: 8,
     paddingVertical: 6,
-    width: isMobileView ? "100%" : 200,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    borderColor: "#133b63",
+    width: "100%",
     borderWidth: 1,
+    borderColor: theme.border,
+    shadowColor: theme.shadow,
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.18,
     shadowRadius: 18,
     elevation: 10,
@@ -303,15 +328,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   menuText: {
-    color: "#eaf6ff",
+    color: theme.textPrimary,
     fontSize: 13,
   },
   content: {
     flex: 1,
     padding: isMobileView ? 8 : 16,
+    backgroundColor: theme.background,
   },
   footer: {
-    color: "#9fd6ff",
+    color: theme.textTertiary,
     fontSize: 12,
     marginBottom: 12,
     marginLeft: 6,

@@ -9,6 +9,7 @@ import {
 import Album from "../../../interfaces/Album";
 import Artist from "../../../interfaces/Artist";
 import { AlbumCard } from "./AlbumCard";
+import { useTheme } from "../../../contexts/ThemeContext";
 
 interface AlbumsListProps {
   albums: Album[];
@@ -25,6 +26,8 @@ export const AlbumsList: React.FC<AlbumsListProps> = ({
   onAlbumPress,
   onArtistPress,
 }) => {
+  const { theme } = useTheme();
+  const styles = React.useMemo(() => getStyles(theme), [theme]);
   return (
     <View>
       <Text style={styles.sectionTitle}>Álbumes</Text>
@@ -35,14 +38,18 @@ export const AlbumsList: React.FC<AlbumsListProps> = ({
           <FlatList<Album>
             data={albums}
             renderItem={({ item }) => {
-              const cachedArtist = item.artistId ? artistCache[item.artistId] : null;
+              const cachedArtist = item.artistId
+                ? artistCache[item.artistId]
+                : null;
               return (
                 <AlbumCard
                   album={item}
                   artist={cachedArtist}
                   onAlbumPress={() => onAlbumPress(item.id)}
                   onArtistPress={
-                    onArtistPress ? () => onArtistPress(item.artistId) : undefined
+                    onArtistPress
+                      ? () => onArtistPress(item.artistId)
+                      : undefined
                   }
                 />
               );
@@ -57,16 +64,17 @@ export const AlbumsList: React.FC<AlbumsListProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  sectionTitle: {
-    color: "#f4f8ff",
-    fontSize: 26,
-    fontWeight: "800",
-    marginVertical: 12,
-  },
-  loader: { marginVertical: 12 },
-  flatListContainer: {
-    overflow: "hidden",
-    marginBottom: 16,
-  },
-});
+const getStyles = (theme: any) =>
+  StyleSheet.create({
+    sectionTitle: {
+      color: theme.textPrimary,
+      fontSize: 26,
+      fontWeight: "800",
+      marginVertical: 12,
+    },
+    loader: { marginVertical: 12 },
+    flatListContainer: {
+      overflow: "hidden",
+      marginBottom: 16,
+    },
+  });

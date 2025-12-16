@@ -6,4 +6,5 @@ export default interface Album {
   artistId: number;
   genre: string;
   year : number;
+  isPodcast? : boolean;
 }
