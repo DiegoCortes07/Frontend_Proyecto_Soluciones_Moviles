@@ -316,15 +316,14 @@ const PlaylistPicker: React.FC<{
             <View style={[styles.createBox, { backgroundColor: theme.backgroundElevated }]}>
               <TextInput
                 placeholder="Nombre"
+                placeholderTextColor={theme.textTertiary}
                 value={name}
                 onChangeText={setName}
                 style={[styles.input, { 
                   backgroundColor: theme.background,
                   color: theme.textPrimary,
                   borderColor: theme.border,
-                  placeholderTextColor: theme.textTertiary
                 }]}
-                placeholderTextColor={theme.textTertiary}
               />
               <TextInput
                 placeholder="Descripción (opcional)"
@@ -334,7 +333,6 @@ const PlaylistPicker: React.FC<{
                   backgroundColor: theme.background,
                   color: theme.textPrimary,
                   borderColor: theme.border,
-                  placeholderTextColor: theme.textTertiary
                 }]}
                 placeholderTextColor={theme.textTertiary}
               />

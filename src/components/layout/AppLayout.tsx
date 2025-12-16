@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions, Platform, Alert } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/FontAwesome";
@@ -8,6 +8,7 @@ import { RootStackParamList } from "../../app/navigation/RootNavigator";
 import { useAuth } from "../../contexts/AuthContext";
 import NowPlayingBar from "../NowPlayingBar";
 import { usePlayer } from "../../contexts/PlayerContext";
+import { Popup } from "../../features/account/components/popup";
 import { useTheme } from "../../contexts/ThemeContext";
 
 // Declarar window para TypeScript en web
@@ -22,6 +23,9 @@ const AppLayout: React.FC<{
 }> = ({ children, onLogout, userName = "Usuario" }) => {
   const navigation = useNavigation<NavProp>();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [dontClose, setDontClose] = useState(false);
+  const buttonRef = useRef<View>(null);
+  const [modalPos, setModalPos] = useState({x:0,y:0});
   const auth = useAuth();
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
@@ -35,6 +39,7 @@ const AppLayout: React.FC<{
 
   const handleLogout = async () => {
     // Mostrar confirmación antes de cerrar sesión
+    console.log("A")
     if (Platform.OS === "web") {
       if (window.confirm("¿Estás seguro de que deseas cerrar sesión?")) {
         await player.stopAndCleanup();
@@ -63,6 +68,19 @@ const AppLayout: React.FC<{
     }
   };
 
+  useEffect(()=>{
+    if(buttonRef.current){
+      buttonRef.current.measure((fx: any, fy: any, width: any, height: any, px: any, py: any) => {
+        setModalPos({ x: px, y: py + height });
+      });
+    }
+  }, [])
+  const closinOnBlur = () => {
+    console.log(dontClose)
+    if(!dontClose){
+      setProfileMenuOpen((p) => !p)
+    }
+  }
   const player = usePlayer();
 
   return (
@@ -71,7 +89,7 @@ const AppLayout: React.FC<{
       <View style={styles.sidebar}>
         <TouchableOpacity style={styles.logoWrap}>
           <Image
-            source={{ uri: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 100 100"><rect rx="18" width="100" height="100" fill="%23071428" /><g transform="translate(18,22)"><circle cx="22" cy="18" r="12" fill="%231DB9FF"/><rect x="46" y="12" width="26" height="12" rx="6" fill="%239fd6ff"/></g></svg>' }}
+            source={{ uri: 'https://icones.pro/wp-content/uploads/2021/04/icone-spotify-bleue.png' }}
             style={styles.logoImage}
             accessibilityLabel="app-logo"
           />
@@ -105,6 +123,7 @@ const AppLayout: React.FC<{
 
           <View style={{ width: "100%", flex: isMobileView ? 1 : 0 }}>
             <TouchableOpacity
+              ref={buttonRef}
               style={[styles.navItem]}
               onPress={() => setProfileMenuOpen((p) => !p)}
               accessibilityLabel="nav-mi-perfil"
@@ -113,9 +132,11 @@ const AppLayout: React.FC<{
               <Text style={styles.navText}>Mi perfil</Text>
             </TouchableOpacity>
 
-            {profileMenuOpen && (
-              <View style={[styles.userMenu, { marginTop: 6, paddingVertical: 4 }]}> 
+            <Popup isOpen={profileMenuOpen} outsidePress={() => setProfileMenuOpen((p) => !p)}>
+              <View style={[styles.userMenu, { marginTop: 6, paddingVertical: 4, top: (modalPos.y), left: (modalPos.x) }]} > 
+                {/*Ver Perfil */}
                 <TouchableOpacity
+                  
                   style={styles.menuItem}
                   onPress={() => {
                     setProfileMenuOpen(false);
@@ -124,6 +145,7 @@ const AppLayout: React.FC<{
                 >
                   <Text style={styles.menuText}>Ver perfil</Text>
                 </TouchableOpacity>
+                {/*Ver preferencias */}
                 <TouchableOpacity
                   style={styles.menuItem}
                   onPress={() => {
@@ -131,8 +153,9 @@ const AppLayout: React.FC<{
                     navigation.navigate("Settings" as never);
                   }}
                 >
-                  <Text style={styles.menuText}>Ajustes</Text>
+                  <Text style={styles.menuText}>Ver Ajustes</Text>
                 </TouchableOpacity>
+                {/*Cerrar sesión */}
                 <TouchableOpacity
                   style={styles.menuItem}
                   onPress={() => {
@@ -143,11 +166,12 @@ const AppLayout: React.FC<{
                   <Text style={[styles.menuText, { color: "#ffdddd" }]}>Cerrar sesión</Text>
                 </TouchableOpacity>
               </View>
-            )}
-          </View>
+
+            </Popup>
         </View>
 
         <View style={{ flex: 1 }} />
+      </View>
       </View>
 
       <View style={[styles.content, { paddingBottom: isMobileView ? 150 : 115 }]}>{children}</View>

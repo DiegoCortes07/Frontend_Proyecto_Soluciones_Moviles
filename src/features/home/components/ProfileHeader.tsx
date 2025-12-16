@@ -9,6 +9,7 @@ interface ProfileHeaderProps {
   user: {
     username: string;
     profilePhoto?: string;
+    alias: string;
   };
 }
 
@@ -19,14 +20,18 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user }) => {
   const { theme } = useTheme();
   const styles = getStyles(theme);
   if (isMobileView) return null;
-
+  const hasAlias = !!user.alias;
   return (
     <View style={styles.profileContainer}>
       <Image
         source={{ uri: user.profilePhoto || defaultAvatar }}
         style={styles.profileImage}
       />
-      <Text style={styles.profileName}>Bienvenido, {user.username}!</Text>
+      {hasAlias ? (
+        <Text style={styles.profileName}>Bienvenido, {user.alias}!</Text>
+      ): (
+        <Text style={styles.profileName}>Bienvenido, {user.username}!</Text>
+      )}
     </View>
   );
 };

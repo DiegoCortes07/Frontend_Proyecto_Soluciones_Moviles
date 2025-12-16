@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Modal, TextInput, ActivityIndicator, Alert, Platform } from "react-native";
 import { useAuth } from "../../../contexts/AuthContext";
 import { useTheme } from "../../../contexts/ThemeContext";
@@ -85,6 +85,7 @@ export default function ProfileScreen() {
   };
 
   const handleChangeProfilePhoto = async () => {
+    console.log(user?.urlProfilePhoto)
     try {
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
       

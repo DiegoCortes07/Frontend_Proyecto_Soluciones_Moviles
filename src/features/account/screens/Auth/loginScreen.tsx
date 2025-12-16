@@ -1,4 +1,4 @@
-import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { 
@@ -15,15 +15,14 @@ import {
   BackHandler
 } from "react-native";
 
-import { RootStackParamList } from "../../../../app/navigation/RootNavigator";
+import { useNavigation } from '@react-navigation/native';
 import {login} from "../../../../../api/auth";
 import { useAuth } from "../../../../contexts/AuthContext";
 import { useSaveData } from "../../../home/hooks/appStorage";
 
-type NavProp = NativeStackNavigationProp<RootStackParamList, "Login">;
 
 export default function LoginScreen() {
-  const navigation = useNavigation<NavProp>();
+  const navigation = useNavigation();
   const { setToken } = useAuth();
 
   const [email, setEmail] = useState("");
@@ -85,23 +84,13 @@ export default function LoginScreen() {
     outputRange: [0, 8],
   });
 
-  useFocusEffect(
-    // El useCallback asegura que el listener solo se cree cuando el componente
-    // se enfoca (es visible).
-    useCallback(() => {
-      // Define la función que se ejecutará al presionar el botón de retroceso.
-      const onBackPress = () => {
-        BackHandler.exitApp();
-        return true; 
-      };
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+      e.preventDefault();
+    });
 
-      // Adjunta el listener cuando la pantalla está enfocada.
-      const event = BackHandler.addEventListener('hardwareBackPress', onBackPress);
-
-      // Limpia el listener cuando la pantalla pierde el foco
-      return () => event.remove();
-    }, [])
-  );
+    return unsubscribe; // Cleanup the listener
+  }, [navigation]);
 
   const handleLogin = () => {
     if(blockedLogin) return;
@@ -250,7 +239,7 @@ export default function LoginScreen() {
 
         <Text style={styles.divider}>────────  o  ────────</Text>
 
-        <TouchableOpacity onPress={() => navigation.navigate("Register")}>
+        <TouchableOpacity onPress={() => navigation.navigate("Register" as never)}>
           <Text style={styles.registerText}>Crear una cuenta</Text>
         </TouchableOpacity>
       </View>

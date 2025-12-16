@@ -1,4 +1,5 @@
 export default interface User {
+    alias: string;
     id: number;
     username : string;
     email : string;

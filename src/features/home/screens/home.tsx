@@ -223,7 +223,12 @@ export default function Home() {
           )}
         </AppLayout>
       ) : (
-        <ActivityIndicator size="large" color="#1DB954" style={styles.loader} />
+        <View style={{top:200,justifyContent: "center",alignItems: "center" }}>
+          <Image source={{ uri: 'https://icones.pro/wp-content/uploads/2021/04/icone-spotify-bleue.png'}}
+              style={{ width:"30%",height:"200%" }}>
+          </Image>
+          <ActivityIndicator size="large" color="#1285e4ff" style={styles.loader} />
+        </View>
       )}
     </View>
   );
