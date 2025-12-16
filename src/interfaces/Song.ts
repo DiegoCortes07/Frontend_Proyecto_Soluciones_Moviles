@@ -10,4 +10,5 @@ export default interface Song {
   explicit?: boolean;
   isPodcast? : boolean;
   duration?: number;
+  genre?: string;
 }

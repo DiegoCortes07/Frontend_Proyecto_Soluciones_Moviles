@@ -95,6 +95,14 @@ const AppLayout: React.FC<{
             <Text style={styles.navText}>Tu biblioteca</Text>
           </TouchableOpacity>
 
+          <TouchableOpacity
+            style={[styles.navItem, currentRouteName === "Plan" ? styles.navActive : undefined]}
+            onPress={() => navigation.navigate("Plan" as never)}
+          >
+            <Icon name="star" size={18} color="#1DB954" />
+            <Text style={styles.navText}>Plan</Text>
+          </TouchableOpacity>
+
           <View style={{ width: "100%", flex: isMobileView ? 1 : 0 }}>
             <TouchableOpacity
               style={[styles.navItem]}

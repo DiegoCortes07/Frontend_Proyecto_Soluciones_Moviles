@@ -175,20 +175,6 @@ export default function SettingsScreen() {
                 </View>
               </View>
             </View>
-
-            {/* Plan */}
-            <View style={styles.settingItem}>
-              <View style={styles.settingHeader}>
-                <Icon name="star" size={20} color="#1DB9FF" style={styles.icon} />
-                <Text style={styles.settingLabel}>Plan de suscripción</Text>
-              </View>
-              <View style={styles.settingContent}>
-                <View style={styles.planBadge}>
-                  <Text style={styles.planText}>{user.plan}</Text>
-                </View>
-              </View>
-              <Text style={styles.planNote}>El plan no se puede modificar desde aquí</Text>
-            </View>
           </View>
 
           {/* Botones de acción */}

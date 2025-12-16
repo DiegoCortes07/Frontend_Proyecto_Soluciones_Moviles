@@ -8,6 +8,7 @@ import LibraryScreen from "../../features/home/screens/Library";
 import AlbumScreen from "../../features/Album/screens/album";
 import ProfileScreen from "../../features/account/screens/ProfileScreen";
 import SettingsScreen from "../../features/account/screens/SettingsScreen";
+import PlanScreen from "../../features/account/screens/PlanScreen";
 import { AuthProvider } from "../../contexts/AuthContext";
 import { PlayerProvider } from "../../contexts/PlayerContext";
 import { ThemeProvider } from "../../contexts/ThemeContext";
@@ -22,6 +23,7 @@ export type RootStackParamList = {
   Album: { id: number };
   Profile: undefined;
   Settings: undefined;
+  Plan: undefined;
 };
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -42,6 +44,7 @@ export default function RootNavigator() {
             <Stack.Screen name="Album" component={AlbumScreen} />
             <Stack.Screen name="Profile" component={ProfileScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen name="Plan" component={PlanScreen} />
           </Stack.Navigator>
         </PlayerProvider>
       </ThemeProvider>

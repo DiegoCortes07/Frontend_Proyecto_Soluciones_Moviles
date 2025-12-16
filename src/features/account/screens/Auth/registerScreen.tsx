@@ -56,21 +56,6 @@ export default function RegisterScreen() {
           onPress={() => navigation.navigate("RegisterEmail")}
         />
 
-        <SocialButton
-          text="Continuar con Teléfono"
-          icon="https://cdn-icons-png.flaticon.com/512/724/724664.png"
-        />
-
-        <SocialButton
-          text="Continuar con Google"
-          icon="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg"
-        />
-
-        <SocialButton
-          text="Continuar con Apple"
-          icon="https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg"
-        />
-
         {/* Link a iniciar sesión */}
         <TouchableOpacity
           style={{ marginTop: 35 }}

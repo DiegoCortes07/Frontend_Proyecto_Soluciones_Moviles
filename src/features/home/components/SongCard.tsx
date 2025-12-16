@@ -3,6 +3,7 @@ import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import Song from "../../../interfaces/Song";
 import { useTheme } from "../../../contexts/ThemeContext";
+import { useAuth } from "../../../contexts/AuthContext";
 import {
   DEFAULT_SONG_IMAGE,
   getSongImageUrl,
@@ -27,10 +28,17 @@ export const SongCard: React.FC<SongCardProps> = ({
   onAddToPlaylist,
 }) => {
   const { theme } = useTheme();
+  const auth = useAuth();
+  const isPremium = auth.user?.plan === "premium";
   const styles = getStyles(theme);
   const getSongImage = () =>
     getSongImageUrl(song?.imageUrl || (song as any)?.image);
   const [imageUri, setImageUri] = React.useState<string>(getSongImage());
+
+  const handleDownload = () => {
+    console.log("Downloading song:", song.title);
+    // Aquí se implementará la lógica de descarga
+  };
 
   React.useEffect(() => {
     setImageUri(getSongImage());
@@ -79,6 +87,14 @@ export const SongCard: React.FC<SongCardProps> = ({
         >
           <Icon name="plus" size={16} color="#9fb4d6" />
         </TouchableOpacity>
+        {isPremium && (
+          <TouchableOpacity
+            onPress={handleDownload}
+            style={styles.songActionButton}
+          >
+            <Icon name="download" size={16} color="#1DB954" />
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );

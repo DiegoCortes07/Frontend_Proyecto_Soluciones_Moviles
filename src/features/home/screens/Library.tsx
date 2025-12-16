@@ -221,6 +221,7 @@ export default function Library() {
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
     >
+      <View style={{ height: 20 }} />
       <Text style={styles.title}>Tu Biblioteca</Text>
       <Text style={styles.section}>Playlists</Text>
       {playlists.length === 0 ? (
@@ -373,7 +374,8 @@ const getStyles = (theme: any) => StyleSheet.create({
   },
   scrollContent: {
     padding: 12,
-    paddingBottom: 20,
+    paddingBottom: 120,
+    paddingTop: 16,
   },
   title: {
     color: theme.textPrimary,

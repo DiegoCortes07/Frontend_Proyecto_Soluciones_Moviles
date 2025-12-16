@@ -9,6 +9,7 @@ import { getArtistForId } from "../../../../api/artist";
 import { usePlayer } from "../../../contexts/PlayerContext";
 import { ProfileHeader } from "./ProfileHeader";
 import { SearchBar } from "./SearchBar";
+import { GenreChips } from "./GenreChips";
 import { SongsList } from "./SongsList";
 import { AlbumsList } from "./AlbumsList";
 import { PodcastsList } from "./PodcastsList";
@@ -41,6 +42,7 @@ const HomeLeftColumn: React.FC<Props> = ({
   >({});
   const [modalArtist, setModalArtist] = React.useState<Artist | null>(null);
   const [artistLoading, setArtistLoading] = React.useState(false);
+  const [selectedGenre, setSelectedGenre] = React.useState<string | null>(null);
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const player = usePlayer();
@@ -104,6 +106,19 @@ const HomeLeftColumn: React.FC<Props> = ({
     ? songs.filter((s) => s.artistName === expandedArtist)
     : [];
 
+  // Filtrar por género
+  const genreFilteredSongs = selectedGenre
+    ? filteredSongs.filter((song) => song.genre?.toLowerCase() === selectedGenre.toLowerCase())
+    : filteredSongs;
+
+  const genreFilteredAlbums = selectedGenre
+    ? filteredAlbums.filter((album) => album.genre?.toLowerCase() === selectedGenre.toLowerCase())
+    : filteredAlbums;
+
+  const genreFilteredPodcasts = selectedGenre
+    ? filteredPodcasts.filter((podcast) => podcast.genre?.toLowerCase() === selectedGenre.toLowerCase())
+    : filteredPodcasts;
+
   return (
     <ScrollView
       contentContainerStyle={[
@@ -119,9 +134,11 @@ const HomeLeftColumn: React.FC<Props> = ({
 
       <SearchBar value={searchText} onChangeText={setSearchText} />
 
+      <GenreChips selectedGenre={selectedGenre} onGenreSelect={setSelectedGenre} />
+
       <SongsList
         title="Todas las Canciones"
-        songs={filteredSongs}
+        songs={genreFilteredSongs}
         loading={loadingSongs}
         isFavorited={player.isFavorited}
         onSongPress={onSongSelect}
@@ -131,7 +148,7 @@ const HomeLeftColumn: React.FC<Props> = ({
       />
 
       <AlbumsList
-        albums={filteredAlbums}
+        albums={genreFilteredAlbums}
         loading={loadingAlbums}
         artistCache={artistCache}
         onAlbumPress={(id) => navigation.navigate("Album", { id })}
@@ -139,7 +156,7 @@ const HomeLeftColumn: React.FC<Props> = ({
       />
 
       <PodcastsList
-        podcasts={filteredPodcasts}
+        podcasts={genreFilteredPodcasts}
         loading={loadingPodcasts}
         artistCache={artistCache}
         onPodcastPress={(id) => navigation.navigate("Album", { id })}
@@ -168,7 +185,7 @@ const HomeLeftColumn: React.FC<Props> = ({
 
       <SongsList
         title="Recomendados para ti"
-        songs={filteredSongs}
+        songs={genreFilteredSongs}
         loading={loadingSongs}
         isFavorited={player.isFavorited}
         onSongPress={onSongSelect}
