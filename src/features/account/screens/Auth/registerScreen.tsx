@@ -1,5 +1,4 @@
 import { useNavigation } from "@react-navigation/native";
-import React from "react";
 import {
   View,
   Text,
@@ -11,7 +10,7 @@ import {
 } from "react-native";
 
 export default function RegisterScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
 
   const SocialButton = ({ text, icon, onPress }: any) => (
     <Pressable
@@ -54,21 +53,6 @@ export default function RegisterScreen() {
           text="Continuar con Email"
           icon="https://cdn-icons-png.flaticon.com/512/732/732200.png"
           onPress={() => navigation.navigate("RegisterEmail")}
-        />
-
-        <SocialButton
-          text="Continuar con Teléfono"
-          icon="https://cdn-icons-png.flaticon.com/512/724/724664.png"
-        />
-
-        <SocialButton
-          text="Continuar con Google"
-          icon="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg"
-        />
-
-        <SocialButton
-          text="Continuar con Apple"
-          icon="https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg"
         />
 
         {/* Link a iniciar sesión */}
