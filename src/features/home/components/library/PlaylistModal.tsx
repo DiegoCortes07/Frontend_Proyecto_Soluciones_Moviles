@@ -13,6 +13,8 @@ import {
 import Icon from "react-native-vector-icons/FontAwesome";
 import Song from "../../../../interfaces/Song";
 import { PlaylistSongRow } from "./PlaylistSongRow";
+import { getPlaylistImageUrl, logImageError } from "../../../../utils/imageHelper";
+import { Theme, useTheme } from "../../../../contexts/ThemeContext";
 
 // Declarar window para TypeScript en web
 declare const window: any;
@@ -54,6 +56,8 @@ export const PlaylistModal: React.FC<PlaylistModalProps> = ({
 }) => {
   if (!visible) return null;
 
+  const { theme, isDark } = useTheme();
+  const styles = React.useMemo(() => getStyles(theme, isDark), [theme, isDark]);
   const [showMenu, setShowMenu] = React.useState(false);
 
   const handleDeletePlaylist = (e: any) => {
@@ -112,7 +116,7 @@ export const PlaylistModal: React.FC<PlaylistModalProps> = ({
               style={{ padding: 6 }}
               activeOpacity={0.7}
             >
-              <Icon name="ellipsis-v" size={20} color="#fff" />
+              <Icon name="ellipsis-v" size={20} color={theme.textPrimary} />
             </TouchableOpacity>
           </View>
 
@@ -125,7 +129,7 @@ export const PlaylistModal: React.FC<PlaylistModalProps> = ({
                   onEditPlaylist();
                 }}
               >
-                <Icon name="edit" size={16} color="#9fb4d6" />
+                <Icon name="edit" size={16} color={theme.textSecondary} />
                 <Text style={styles.menuItemText}>Editar playlist</Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -135,8 +139,8 @@ export const PlaylistModal: React.FC<PlaylistModalProps> = ({
                   handleDeletePlaylist(e);
                 }}
               >
-                <Icon name="trash" size={16} color="#ff6b6b" />
-                <Text style={[styles.menuItemText, { color: "#ff6b6b" }]}>
+                <Icon name="trash" size={16} color={theme.error} />
+                <Text style={[styles.menuItemText, { color: theme.error }]}>
                   Eliminar playlist
                 </Text>
               </TouchableOpacity>
@@ -148,11 +152,11 @@ export const PlaylistModal: React.FC<PlaylistModalProps> = ({
               <Image
                 source={{ uri: playlistImage }}
                 style={styles.coverImage}
-                resizeMode="cover"
-              />
+                resizeMode="cover"                onError={() => console.log("Error loading playlist cover:", playlistImage)}
+                progressiveRenderingEnabled={true}              />
             ) : (
               <View style={[styles.coverImage, styles.coverPlaceholder]}>
-                <Icon name="music" size={28} color="#9fb4d6" />
+                <Icon name="music" size={28} color={theme.textTertiary} />
               </View>
             )}
 
@@ -167,7 +171,7 @@ export const PlaylistModal: React.FC<PlaylistModalProps> = ({
                 </Text>
               ) : null}
               <View style={styles.metaRow}>
-                <Icon name="music" size={12} color="#9fb4d6" />
+                <Icon name="music" size={12} color={theme.textTertiary} />
                 <Text style={styles.metaText}>
                   {songs.length} {songs.length === 1 ? "canción" : "canciones"}
                 </Text>
@@ -209,7 +213,7 @@ export const PlaylistModal: React.FC<PlaylistModalProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (theme: Theme, isDark: boolean) => StyleSheet.create({
   overlay: {
     position: "absolute",
     top: 0,
@@ -222,19 +226,19 @@ const styles = StyleSheet.create({
   },
   overlayBackdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.55)",
+    backgroundColor: theme.overlay,
   },
   overlayPanel: {
     backgroundColor: "transparent",
   },
   modalCard: {
     maxHeight: "100%",
-    backgroundColor: "#0b142a",
+    backgroundColor: theme.background,
     borderRadius: 20,
     padding: 14,
     borderWidth: 1,
-    borderColor: "#20345d",
-    shadowColor: "#000",
+    borderColor: theme.border,
+    shadowColor: theme.shadow,
     shadowOpacity: 0.25,
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 10 },
@@ -246,7 +250,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   backButtonText: {
-    color: "#7fe9b5",
+    color: theme.primary,
     fontSize: 16,
     fontWeight: "700",
   },
@@ -257,41 +261,41 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     padding: 10,
     borderRadius: 16,
-    backgroundColor: "#0f1d3b",
+    backgroundColor: theme.backgroundSecondary,
     borderWidth: 1,
-    borderColor: "#1e3156",
+    borderColor: theme.border,
   },
   coverImage: {
     width: 96,
     height: 96,
     borderRadius: 16,
-    backgroundColor: "#142443",
+    backgroundColor: theme.backgroundCard,
   },
   coverPlaceholder: {
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#1e3156",
+    borderColor: theme.border,
   },
   heroText: {
     flex: 1,
     gap: 6,
   },
   playlistLabel: {
-    color: "#8fb3ff",
+    color: theme.primaryLight,
     textTransform: "uppercase",
     letterSpacing: 1,
     fontSize: 11,
     fontWeight: "700",
   },
   heroTitle: {
-    color: "#f4f8ff",
+    color: theme.textPrimary,
     fontSize: 22,
     fontWeight: "800",
     lineHeight: 26,
   },
   heroDescription: {
-    color: "#b8c7e8",
+    color: theme.textSecondary,
     fontSize: 14,
     lineHeight: 18,
   },
@@ -302,7 +306,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   metaText: {
-    color: "#9fb4d6",
+    color: theme.textTertiary,
     fontSize: 13,
     fontWeight: "600",
   },
@@ -310,25 +314,25 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     paddingHorizontal: 14,
     paddingVertical: 10,
-    backgroundColor: "#1DB954",
+    backgroundColor: theme.primary,
     borderRadius: 999,
     marginBottom: 12,
-    shadowColor: "#1DB954",
-    shadowOpacity: 0.35,
+    shadowColor: theme.primary,
+    shadowOpacity: 0.25,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
     elevation: 4,
   },
   playAllText: {
-    color: "#031427",
+    color: isDark ? "#031427" : "#f6fbff",
     fontWeight: "800",
     letterSpacing: 0.3,
   },
   menuContainer: {
-    backgroundColor: "#0c1730",
+    backgroundColor: theme.backgroundSecondary,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#1c2f55",
+    borderColor: theme.border,
     marginBottom: 12,
     overflow: "hidden",
   },
@@ -339,7 +343,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   menuItemText: {
-    color: "#9fb4d6",
+    color: theme.textPrimary,
     fontSize: 16,
     fontWeight: "600",
   },

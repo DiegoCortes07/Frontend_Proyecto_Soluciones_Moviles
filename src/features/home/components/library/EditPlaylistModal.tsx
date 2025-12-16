@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import * as ImagePicker from "expo-image-picker";
+import { Theme, useTheme } from "../../../../contexts/ThemeContext";
 
 // Declarar window para TypeScript en web
 declare const window: any;
@@ -42,6 +43,9 @@ export const EditPlaylistModal: React.FC<EditPlaylistModalProps> = ({
   const [description, setDescription] = useState(currentDescription);
   const [imageUri, setImageUri] = useState<string | null>(currentImage);
   const [loading, setLoading] = useState(false);
+
+  const { theme, isDark } = useTheme();
+  const styles = React.useMemo(() => getStyles(theme, isDark), [theme, isDark]);
 
   React.useEffect(() => {
     setName(currentName);
@@ -154,17 +158,17 @@ export const EditPlaylistModal: React.FC<EditPlaylistModalProps> = ({
 
   return (
     <Modal visible={visible} transparent animationType="fade">
-      <View style={styles.overlay}>
+      <View style={[styles.overlay, { backgroundColor: theme.overlay }]}>
         <TouchableOpacity 
           style={styles.overlayBackdrop} 
           activeOpacity={1} 
           onPress={onClose}
         />
-        <View style={styles.modalContainer}>
+        <View style={[styles.modalContainer, { backgroundColor: theme.backgroundElevated, borderColor: theme.border }]}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Editar Playlist</Text>
+            <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Editar Playlist</Text>
             <TouchableOpacity onPress={onClose}>
-              <Icon name="times" size={24} color="#fff" />
+              <Icon name="times" size={24} color={theme.textPrimary} />
             </TouchableOpacity>
           </View>
 
@@ -173,11 +177,11 @@ export const EditPlaylistModal: React.FC<EditPlaylistModalProps> = ({
               {imageUri ? (
                 <Image source={{ uri: imageUri }} style={styles.playlistImage} />
               ) : (
-                <View style={styles.placeholderImage}>
-                  <Icon name="music" size={40} color="#9fb4d6" />
+                <View style={[styles.placeholderImage, { backgroundColor: theme.backgroundCard, borderColor: theme.border }]}>
+                  <Icon name="music" size={40} color={theme.textSecondary} />
                 </View>
               )}
-              <View style={styles.imageOverlay}>
+              <View style={[styles.imageOverlay, { backgroundColor: theme.shadow }]}>
                 <Icon name="camera" size={24} color="#fff" />
                 <Text style={styles.changeImageText}>Cambiar imagen</Text>
               </View>
@@ -185,23 +189,31 @@ export const EditPlaylistModal: React.FC<EditPlaylistModalProps> = ({
           </View>
 
           <View style={styles.inputSection}>
-            <Text style={styles.label}>Nombre</Text>
+            <Text style={[styles.label, { color: theme.textSecondary }]}>Nombre</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { 
+                backgroundColor: theme.backgroundCard, 
+                borderColor: theme.border,
+                color: theme.textPrimary 
+              }]}
               value={name}
               onChangeText={setName}
               placeholder="Nombre de la playlist"
-              placeholderTextColor="#9fb4d6"
+              placeholderTextColor={theme.textTertiary}
               maxLength={100}
             />
 
-            <Text style={styles.label}>Descripción</Text>
+            <Text style={[styles.label, { color: theme.textSecondary }]}>Descripción</Text>
             <TextInput
-              style={[styles.input, styles.textArea]}
+              style={[styles.input, styles.textArea, { 
+                backgroundColor: theme.backgroundCard, 
+                borderColor: theme.border,
+                color: theme.textPrimary 
+              }]}
               value={description}
               onChangeText={setDescription}
               placeholder="Descripción (opcional)"
-              placeholderTextColor="#9fb4d6"
+              placeholderTextColor={theme.textTertiary}
               multiline
               numberOfLines={4}
               maxLength={500}
@@ -210,22 +222,22 @@ export const EditPlaylistModal: React.FC<EditPlaylistModalProps> = ({
 
           <View style={styles.buttonContainer}>
             <TouchableOpacity
-              style={[styles.button, styles.cancelButton]}
+              style={[styles.button, styles.cancelButton, { backgroundColor: theme.backgroundSecondary, borderColor: theme.border }]}
               onPress={onClose}
               disabled={loading}
             >
-              <Text style={styles.cancelButtonText}>Cancelar</Text>
+              <Text style={[styles.cancelButtonText, { color: theme.textSecondary }]}>Cancelar</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.button, styles.saveButton]}
+              style={[styles.button, styles.saveButton, { backgroundColor: theme.primary }]}
               onPress={handleSave}
               disabled={loading}
             >
               {loading ? (
-                <ActivityIndicator color="#031427" size="small" />
+                <ActivityIndicator color={theme.background} size="small" />
               ) : (
-                <Text style={styles.saveButtonText}>Guardar</Text>
+                <Text style={[styles.saveButtonText, { color: theme.background }]}>Guardar</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -235,25 +247,25 @@ export const EditPlaylistModal: React.FC<EditPlaylistModalProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (theme: Theme, isDark: boolean) => StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.7)",
+    backgroundColor: theme.overlay,
   },
   overlayBackdrop: {
     ...StyleSheet.absoluteFillObject,
   },
   modalContainer: {
-    backgroundColor: "#0b1630",
+    backgroundColor: theme.backgroundElevated,
     borderRadius: 18,
     padding: 20,
     width: "90%",
     maxWidth: 500,
     borderWidth: 1,
-    borderColor: "#1c2f55",
-    shadowColor: "#000",
+    borderColor: theme.border,
+    shadowColor: theme.shadow,
     shadowOpacity: 0.3,
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 10 },
@@ -268,7 +280,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 24,
     fontWeight: "800",
-    color: "#f4f8ff",
+    color: theme.textPrimary,
   },
   imageSection: {
     alignItems: "center",
@@ -289,11 +301,11 @@ const styles = StyleSheet.create({
   placeholderImage: {
     width: "100%",
     height: "100%",
-    backgroundColor: "#0c1730",
+    backgroundColor: theme.backgroundCard,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
-    borderColor: "#1c2f55",
+    borderColor: theme.border,
     borderRadius: 12,
   },
   imageOverlay: {
@@ -317,18 +329,18 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#dfe8ff",
+    color: theme.textSecondary,
     marginBottom: 8,
     marginTop: 12,
   },
   input: {
-    backgroundColor: "#0c1730",
+    backgroundColor: theme.backgroundCard,
     borderWidth: 1,
-    borderColor: "#1c2f55",
+    borderColor: theme.border,
     borderRadius: 12,
     padding: 14,
     fontSize: 16,
-    color: "#f4f8ff",
+    color: theme.textPrimary,
   },
   textArea: {
     height: 100,
@@ -347,18 +359,20 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   cancelButton: {
-    backgroundColor: "#1c2f55",
+    backgroundColor: theme.backgroundSecondary,
+    borderWidth: 1,
+    borderColor: theme.border,
   },
   cancelButtonText: {
-    color: "#9fb4d6",
+    color: theme.textSecondary,
     fontSize: 16,
     fontWeight: "700",
   },
   saveButton: {
-    backgroundColor: "#1DB954",
+    backgroundColor: theme.primary,
   },
   saveButtonText: {
-    color: "#031427",
+    color: theme.background,
     fontSize: 16,
     fontWeight: "800",
   },

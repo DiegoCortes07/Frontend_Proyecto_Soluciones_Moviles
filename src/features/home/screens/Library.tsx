@@ -6,7 +6,9 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
+  ScrollView,
 } from "react-native";
+import Icon from "react-native-vector-icons/FontAwesome";
 import AppLayout from "../../../components/layout/AppLayout";
 import { useAuth } from "../../../contexts/AuthContext";
 import { getLikedSongs } from "../../../../api/like";
@@ -21,14 +23,17 @@ import {
   uploadPlaylistImage,
 } from "../../../../api/playlist";
 import { usePlayer } from "../../../contexts/PlayerContext";
+import { useTheme } from "../../../contexts/ThemeContext";
 import { PlaylistCard } from "../components/library/PlaylistCard";
-import { LikedSongCard } from "../components/library/LikedSongCard";
 import { PlaylistModal } from "../components/library/PlaylistModal";
 import { EditPlaylistModal } from "../components/library/EditPlaylistModal";
+import { LikedSongsModal } from "../components/library/LikedSongsModal";
 
 export default function Library() {
   const { user, token, loading } = useAuth();
   const player = usePlayer();
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
   const [userLikesSong, setUserLikesSong] = useState<Song[]>([]);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [playlistSongsMap, setPlaylistSongsMap] = useState<
@@ -43,10 +48,11 @@ export default function Library() {
   const [editingPlaylistId, setEditingPlaylistId] = useState<number | null>(
     null
   );
+  const [likedSongsModalOpen, setLikedSongsModalOpen] = useState(false);
 
   const likedSongsToRender = React.useMemo(
     () => userLikesSong.filter((song) => player.isFavorited(song.id)),
-    [userLikesSong, player]
+    [userLikesSong, player.isFavorited]
   );
 
   useEffect(() => {
@@ -133,24 +139,14 @@ export default function Library() {
   };
 
   const handleDeletePlaylist = async (playlistId: number) => {
-    console.log("Library: handleDeletePlaylist START", playlistId);
     try {
-      console.log("Library: deletePlaylist call", {
-        tokenPresent: !!token,
-        playlistId,
-      });
       if (!token) {
         console.log("Library: No token available, aborting delete");
         return;
       }
-      console.log("Library: Calling API deletePlaylist...");
       await deletePlaylist(token, playlistId);
-      console.log("Library: deletePlaylist API call successful");
-      console.log("Library: Reloading playlists...");
       await loadPlaylists();
-      console.log("Library: Playlists reloaded");
       if (selectedPlaylistId === playlistId) {
-        console.log("Library: Closing modal");
         setSelectedPlaylistId(null);
       }
       console.log("Library: handleDeletePlaylist COMPLETE");
@@ -178,13 +174,8 @@ export default function Library() {
         console.log("Library: No token available, aborting remove");
         return;
       }
-      console.log("Library: Calling API removeSongFromPlaylist...");
       await removeSongFromPlaylist(token, playlistId, song.id);
-      console.log("Library: removeSongFromPlaylist API call successful");
-      console.log("Library: Reloading playlists...");
       await loadPlaylists();
-      console.log("Library: Playlists reloaded");
-      console.log("Library: handleRemoveSongFromPlaylist COMPLETE");
     } catch (err) {
       console.error("Library: Error removing song from playlist:", err);
     }
@@ -225,7 +216,12 @@ export default function Library() {
   };
 
   const content = (
-    <View style={styles.container}>
+    <ScrollView 
+      style={styles.container}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={{ height: 20 }} />
       <Text style={styles.title}>Tu Biblioteca</Text>
       <Text style={styles.section}>Playlists</Text>
       {playlists.length === 0 ? (
@@ -251,29 +247,20 @@ export default function Library() {
 
       <Text style={[styles.section, { marginTop: 18 }]}>Me gusta</Text>
       <TouchableOpacity
-        style={styles.playAllButton}
-        onPress={() =>
-          likedSongsToRender.length > 0 &&
-          player.playQueue(likedSongsToRender, 0)
-        }
+        style={styles.likedSongsCard}
+        onPress={() => setLikedSongsModalOpen(true)}
       >
-        <Text style={styles.playAllText}>Reproducir todo</Text>
+        <View style={styles.likedSongsIcon}>
+          <Icon name="heart" size={32} color="#ff6b81" />
+        </View>
+        <View style={styles.likedSongsInfo}>
+          <Text style={styles.likedSongsTitle}>Canciones que te gustan</Text>
+          <Text style={styles.likedSongsCount}>
+            {likedSongsToRender.length} {likedSongsToRender.length === 1 ? "canción" : "canciones"}
+          </Text>
+        </View>
+        <Icon name="chevron-right" size={20} color="#8ba3c7" />
       </TouchableOpacity>
-      <FlatList
-        horizontal
-        data={likedSongsToRender}
-        keyExtractor={(i) => i.id.toString()}
-        renderItem={({ item, index }) => (
-          <LikedSongCard
-            song={item}
-            isFavorited={player.isFavorited(item.id)}
-            onPress={() => playLikedAtIndex(index)}
-            onToggleFavorite={() => handleToggleFavorite(item)}
-            onAddToPlaylist={() => player.addToPlaylist(item)}
-          />
-        )}
-        showsHorizontalScrollIndicator={false}
-      />
 
       <PlaylistModal
         visible={selectedPlaylistId !== null}
@@ -353,7 +340,22 @@ export default function Library() {
         onSave={handleEditPlaylist}
         onUploadImage={handleUploadPlaylistImage}
       />
-    </View>
+
+      <LikedSongsModal
+        visible={likedSongsModalOpen}
+        songs={likedSongsToRender}
+        isFavorited={player.isFavorited}
+        onClose={() => setLikedSongsModalOpen(false)}
+        onPlayAll={() => {
+          if (likedSongsToRender.length > 0) {
+            player.playQueue(likedSongsToRender, 0);
+          }
+        }}
+        onSongPress={(index) => playLikedAtIndex(index)}
+        onToggleFavorite={handleToggleFavorite}
+        onAddToPlaylist={player.addToPlaylist}
+      />
+    </ScrollView>
   );
 
   if (loading) {
@@ -365,42 +367,65 @@ export default function Library() {
   return <AppLayout userName={user?.username}>{content}</AppLayout>;
 }
 
-const styles = StyleSheet.create({
+const getStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: theme.background,
+  },
+  scrollContent: {
     padding: 12,
-    backgroundColor: "#050d1a",
+    paddingBottom: 120,
+    paddingTop: 16,
   },
   title: {
-    color: "#f2f6ff",
+    color: theme.textPrimary,
     fontSize: 22,
     fontWeight: "800",
     marginBottom: 8,
   },
   section: {
-    color: "#dfe8ff",
+    color: theme.textSecondary,
     fontSize: 16,
     fontWeight: "700",
     marginBottom: 6,
     marginTop: 2,
   },
-  playAllButton: {
-    alignSelf: "flex-start",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    backgroundColor: "#1DB954",
-    borderRadius: 999,
-    marginBottom: 10,
-    shadowColor: "#1DB954",
-    shadowOpacity: 0.35,
+  likedSongsCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: theme.backgroundSecondary,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: theme.border,
+    shadowColor: theme.shadow,
+    shadowOpacity: 0.3,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
     elevation: 4,
   },
-  playAllText: {
-    color: "#031427",
-    fontWeight: "800",
-    letterSpacing: 0.3,
+  likedSongsIcon: {
+    width: 60,
+    height: 60,
+    backgroundColor: theme.backgroundCard,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 16,
+  },
+  likedSongsInfo: {
+    flex: 1,
+  },
+  likedSongsTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: theme.textPrimary,
+    marginBottom: 4,
+  },
+  likedSongsCount: {
+    fontSize: 14,
+    color: theme.textTertiary,
   },
   emptyContainer: {
     paddingVertical: 40,
@@ -409,7 +434,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   emptyText: {
-    color: "#9fb4d6",
+    color: theme.textTertiary,
     fontSize: 16,
     fontWeight: "600",
     textAlign: "center",

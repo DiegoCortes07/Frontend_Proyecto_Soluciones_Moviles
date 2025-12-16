@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import Song from "../../../interfaces/Song";
 import { SongCard } from "./SongCard";
+import { useTheme } from "../../../contexts/ThemeContext";
 
 interface SongsListProps {
   title: string;
@@ -30,6 +31,8 @@ export const SongsList: React.FC<SongsListProps> = ({
   onToggleFavorite,
   onAddToPlaylist,
 }) => {
+  const { theme } = useTheme();
+  const styles = React.useMemo(() => getStyles(theme), [theme]);
   return (
     <View>
       <Text style={styles.sectionTitle}>{title}</Text>
@@ -61,16 +64,17 @@ export const SongsList: React.FC<SongsListProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  sectionTitle: {
-    color: "#f4f8ff",
-    fontSize: 26,
-    fontWeight: "800",
-    marginVertical: 12,
-  },
-  loader: { marginVertical: 12 },
-  flatListContainer: {
-    overflow: "hidden",
-    marginBottom: 16,
-  },
-});
+const getStyles = (theme: any) =>
+  StyleSheet.create({
+    sectionTitle: {
+      color: theme.textPrimary,
+      fontSize: 26,
+      fontWeight: "800",
+      marginVertical: 12,
+    },
+    loader: { marginVertical: 12 },
+    flatListContainer: {
+      overflow: "hidden",
+      marginBottom: 16,
+    },
+  });
